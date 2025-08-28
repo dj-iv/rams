@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import uctelLogo from './assets/uctel-logo.png';
 
 // NOTE: In a real-world scenario, Firebase would be initialized in a separate config file.
 // For this self-contained component, we'll simulate the necessary imports.
@@ -7,48 +8,94 @@ import React, { useState, useEffect } from 'react';
 // import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 
 // --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-// ASSETS & STATIC DATA
+// ASSETS & STATIC DATA (MODULAR METHOD STATEMENT)
 // --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
-
-import uctelLogo from './assets/uctel-logo.png';
+const STANDARD_TASKS = {
+  1: {
+    title: "Site Induction",
+    options: {
+      construction: { name: "Construction Site", description: "All UCtel personnel will complete the site induction prior to commencing any works. This will ensure that staff are fully briefed on site-specific risks, emergency procedures, welfare provisions, and health and safety requirements." },
+      office: { name: "Standard Office", description: "All UCtel staff will be briefed on the site's emergency procedures and specific requirements prior to commencing any work." },
+    }
+  },
+  2: {
+    title: "Donor Antenna Installation",
+    options: {
+      standOnRoof: { name: "Stand on roof", description: "A free-standing, non-penetrative pole mount will be installed on the roof to accommodate the donor antenna(s). The location will be selected for optimal line-of-sight with nearby cell towers." },
+      poleOnWall: { name: "Pole on wall", description: "A galvanised steel bracket will be securely fixed to the external wall of the building. A mounting pole will be fitted to the bracket to accommodate the donor antenna(s)." },
+      existingPole: { name: "Existing pole", description: "The donor antenna(s) will be securely fitted to the existing pole/mast designated by the client." },
+      ceilingVoid: { name: "Internal (Ceiling Void)", description: "The donor antenna will be mounted internally within the ceiling void, positioned for the best possible signal reception from outside."}
+    }
+  },
+  3: {
+    title: "Network Unit (NU) Installation",
+    options: {
+      wallMount: { name: "Wall mount", description: "The Network Unit(s) will be securely mounted on a wall within the designated riser or comms room using appropriate wall plugs and screws." },
+      rackMount: { name: "Rack mount", description: "The Network Unit(s) will be installed in the designated comms room rack, ensuring adequate ventilation." },
+    }
+  },
+  4: {
+    title: "DAS Installation",
+    options: {
+      default: { name: "Default", description: "A Distributed Antenna System (DAS) will be deployed to provide improved in-building coverage. OMNI server antennas will be connected to the NUs via a structured network of RF splitters and LMR400 coaxial cable. Antennas will be strategically positioned to ensure consistent signal distribution." }
+    }
+  },
+  5: {
+    title: "System Commissioning",
+    options: {
+      default: { name: "Default", description: "Upon completion of the physical installation, UCtel engineers will configure and commission the system using the CEL-FI WAVE app and approved testing tools. System adjustments will be undertaken as required to achieve optimal coverage and performance." }
+    }
+  },
+  6: {
+    title: "Client Handover",
+    options: {
+      default: { name: "Default", description: "Following successful commissioning, UCtel will provide the client with a formal 'As-Built' document. This will include photographic records of the installation, post-installation signal readings, and confirmation of system performance." }
+    }
+  },
+  7: {
+    title: "Hub Installation",
+    options: {
+        default: { name: "Default", description: "The QUATRA Hub unit will be installed in the main comms room. It will be connected to the Network Units via CAT 6 cabling and powered from a dedicated power source." }
+    }
+  },
+  8: {
+    title: "CAT 6 Cabling",
+    options: {
+        default: { name: "Default", description: "Certified CAT 6a cabling will be routed from the Hub to each Network Unit location. Cables will be run within existing containment where possible, tested, and clearly labelled at both ends." }
+    }
+  },
+  9: {
+    title: "Post Installation Survey",
+    options: {
+      default: { name: "Default", description: "A comprehensive post-installation survey will be conducted to measure and document the signal strength (RSRP) and quality (SINR) across all covered areas, ensuring the system meets the agreed performance criteria." }
+    }
+  },
+};
 
 const JOB_TEMPLATES = {
-  "CEL-FI-G43": {
-    name: "CEL-FI GO G43 Signal Booster Installation",
+  "G41": {
+    name: "CEL-FI G41 Installation",
+    description: "Mobile Signal Booster Installation - CEL-FI G41.",
+    taskIds: [1, 2, 3, 4, 5, 6, 9]
+  },
+  "G43": {
+    name: "CEL-FI G43 Installation",
     description: "Mobile Signal Booster Installation - CEL-FI GO G43.",
-    methodStatement: `3.1 Site Induction: All UCtel personnel will complete the site induction prior to commencing any works. This will ensure that staff are fully briefed on site-specific risks, emergency procedures, welfare provisions, and health and safety requirements. No works will commence until the induction process has been completed.
-
-3.2 Donor Antenna Installation: UCtel will install a weather-resistant mounting stand on the building roof to accommodate two directional donor antennas. Access to the roof will be via the designated staircase, with all personnel adhering strictly to site safety procedures, including the use of fall protection equipment where necessary. The stand will be positioned to ensure optimal line-of-sight with nearby cell towers. Antennas will be securely fixed using appropriate fixings (washers, nuts, and bolts) to ensure structural stability and long-term reliability.
-
-3.3 Network Units (NUs) Installation: Two CEL-FI GO G43 Network Units (NUs) will be installed within the fourth-floor riser. Units will be securely mounted either on the riser wall using appropriate wall plugs and screws, or housed within the existing cabinet, depending on site conditions. Installation will comply with manufacturer recommendations and electrical safety standards.
-
-3..4 DAS Installation: UCtel will deploy a Distributed Antenna System (DAS) to provide improved in-building coverage. OMNI antennas will be connected to the NUs via a structured network of RF splitters and LMR400 coaxial cable. Antennas will be strategically positioned throughout Block A to ensure consistent and even signal distribution. All works will be carried out in accordance with manufacturer specifications, industry best practice, and relevant standards to ensure optimal system performance and long-term reliability.
-
-3.5 System Commissioning: Upon completion of the physical installation, UCtel engineers will configure and commission the system using approved testing and configuration tools. System adjustments, including antenna orientation, will be undertaken as required to achieve optimal coverage and performance.
-
-3.6 Client Handover: Following system commissioning, UCtel will provide the client with a formal 'As-Built' document. This will include photographic records of the installation, equipment allocation details, cable routing diagrams (where applicable), and post-installation signal readings.`
+    taskIds: [1, 2, 3, 4, 5, 6, 9]
+  },
+  "QUATRA": {
+    name: "CEL-FI QUATRA Installation",
+    description: "Enterprise In-Building Cellular Coverage - CEL-FI QUATRA.",
+    taskIds: [1, 2, 3, 7, 8, 4, 5, 6, 9]
   },
   "NetworkCabling": {
     name: "Structured Network Cabling",
     description: "Structured network cabling installation.",
-    methodStatement: `1-Sequence / Scope of Works:
-Installation of Cat6/Cat6a network cabling infrastructure.
-1.1 Cable containment installation (trunking, tray).
-1.2 First fix cable pulling to designated locations.
-1.3 Termination of network outlets and patch panels.
-1.4 Full testing and certification of all links.
-1.5 Labelling and documentation.
-
-2-Key Project Stages:
-2.1 Pre Start: Agree cable routes, confirm outlet locations, site induction.
-2.2 Containment: Install all necessary trunking, tray work, and conduits.
-2.3 Cable Pulling: Route cables from the comms room to each outlet location.
-2.4 Termination: Terminate all cables at both ends.
-2.5 Testing: Use a Fluke network tester to certify each link to standard.
-2.6 Handover: Provide full test results and as-built drawings.`
+    taskIds: [1, 8, 6] // Example tasks
   }
 };
+
 
 const RISK_ASSESSMENTS = {
   workAtHeight: {
@@ -125,6 +172,32 @@ const DEFAULT_PERMITS = [
 ];
 
 // --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+// Helper Functions
+// --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+const compileMethodStatement = (selectedTasks) => {
+    let statement = "";
+    let step = 1;
+    selectedTasks.forEach(task => {
+        if (task.enabled) {
+            const taskInfo = STANDARD_TASKS[task.taskId];
+            const optionInfo = taskInfo.options[task.selectedOption];
+            statement += `3.${step} ${taskInfo.title}: ${optionInfo.description}\n\n`;
+            step++;
+        }
+    });
+    return statement.trim();
+};
+
+const initializeSelectedTasks = (templateKey) => {
+    const taskIds = JOB_TEMPLATES[templateKey].taskIds;
+    return taskIds.map(id => ({
+        taskId: id,
+        selectedOption: Object.keys(STANDARD_TASKS[id].options)[0], // Default to first option
+        enabled: true,
+    }));
+};
+
+// --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 // Main Application Component
 // --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 export default function App() {
@@ -163,68 +236,102 @@ export default function App() {
   // --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
   const [step, setStep] = useState(1);
   const [showPreview, setShowPreview] = useState(false);
-  const [formData, setFormData] = useState({
-    // Step 1: Project Details
-    client: 'iQ Student Accommodation',
-    siteAddress: '120 Longwood Close, Coventry',
-    projectDescription: JOB_TEMPLATES['CEL-FI-G43'].description,
-    commencementDate: '2025-09-01',
-    estimatedCompletionDate: '2025-09-05',
-    preparedBy: 'James Smith',
-    preparedByEmail: 'james.smith@uctel.co.uk',
-    preparedByPhone: '+44 7730 890403',
-    
-    // Step 2: Project Team
-    projectTeam: [
-        { id: 1, name: 'James Smith', role: 'Project Coordinator', phone: '+44 7730 890403'},
-        { id: 2, name: '', role: '', phone: ''},
-    ],
+  const [formData, setFormData] = useState(() => {
+    const initialTemplate = 'G43';
+    const initialTasks = initializeSelectedTasks(initialTemplate);
+    return {
+        // Step 1: Project Details
+        client: 'iQ Student Accommodation',
+        siteAddress: '120 Longwood Close, Coventry',
+        projectDescription: JOB_TEMPLATES[initialTemplate].description,
+        commencementDate: '2025-09-01',
+        estimatedCompletionDate: '2025-09-05',
+        preparedBy: 'James Smith',
+        preparedByEmail: 'james.smith@uctel.co.uk',
+        preparedByPhone: '+44 7730 890403',
+        
+        // Step 2: Project Team
+        projectTeam: [
+            { id: 1, name: 'James Smith', role: 'Project Coordinator', phone: '+44 7730 890403'},
+            { id: 2, name: '', role: '', phone: ''},
+        ],
 
-    // Step 3: Job & Method
-    jobTemplate: 'CEL-FI-G43',
-    methodStatement: JOB_TEMPLATES['CEL-FI-G43'].methodStatement,
-    
-    // Step 4: Risks
-    risks: JSON.parse(JSON.stringify(RISK_ASSESSMENTS)), // Deep copy
+        // Step 3: Job & Method
+        jobTemplate: initialTemplate,
+        selectedTasks: initialTasks,
+        methodStatement: compileMethodStatement(initialTasks),
+        
+        // Step 4: Risks
+        risks: JSON.parse(JSON.stringify(RISK_ASSESSMENTS)), // Deep copy
 
-    // Step 5: Safety & Logistics
-    permits: JSON.parse(JSON.stringify(DEFAULT_PERMITS)),
-    ppe: JSON.parse(JSON.stringify(DEFAULT_PPE)),
-    producesWaste: true,
-    wasteDisposalPlan: 'Where possible, all waste materials generated during UCtel works will be disposed of using the bins provided by the client on-site. UCtel will segregate waste where practicable and ensure disposal is in accordance with site procedures and relevant environmental legislation.',
-    hasHazardousSubstances: false,
-    coshhDetails: 'UCtel does not anticipate the use of any hazardous materials or substances during the works. All cabling materials and consumables utilised on-site are classified as non-hazardous. Should hazardous substances be introduced in future scope variations, appropriate COSHH assessments will be undertaken and communicated to all personnel prior to use.',
-    thirdPartySafety: `UCtel will utilise clear warning signage ("Work in Progress", "Keep Clear") to notify of active work areas.\nAll UCtel operatives will wear high-visibility PPE to ensure they are easily identifiable at all times.\nTools, cabling and equipment will be kept tidy and secured to prevent obstruction of pedestrian routes or fire exits.\nWork areas will be cordoned off where appropriate to minimise the risk of unauthorised access.`,
-    emergencyArrangements: `The nearest A&E is located at University Hospital Coventry and Warwickshire (UHCW) - Clifford Bridge Road, Coventry, CV2 2DX.\nAll UCtel staff will familiarise themselves with the site's emergency evacuation procedures during induction.\nFirst Aid provision will be in line with site arrangements, with UCtel supervisors ensuring operatives are aware of first aid points and trained first aiders.`,
-    
-    // Step 6: Equipment & Materials
-    tools: JSON.parse(JSON.stringify(DEFAULT_TOOLS)),
-    materials: JSON.parse(JSON.stringify(DEFAULT_MATERIALS)),
+        // Step 5: Safety & Logistics
+        permits: JSON.parse(JSON.stringify(DEFAULT_PERMITS)),
+        ppe: JSON.parse(JSON.stringify(DEFAULT_PPE)),
+        producesWaste: true,
+        wasteDisposalPlan: 'Where possible, all waste materials generated during UCtel works will be disposed of using the bins provided by the client on-site. UCtel will segregate waste where practicable and ensure disposal is in accordance with site procedures and relevant environmental legislation.',
+        hasHazardousSubstances: false,
+        coshhDetails: 'UCtel does not anticipate the use of any hazardous materials or substances during the works. All cabling materials and consumables utilised on-site are classified as non-hazardous. Should hazardous substances be introduced in future scope variations, appropriate COSHH assessments will be undertaken and communicated to all personnel prior to use.',
+        thirdPartySafety: `UCtel will utilise clear warning signage ("Work in Progress", "Keep Clear") to notify of active work areas.\nAll UCtel operatives will wear high-visibility PPE to ensure they are easily identifiable at all times.\nTools, cabling and equipment will be kept tidy and secured to prevent obstruction of pedestrian routes or fire exits.\nWork areas will be cordoned off where appropriate to minimise the risk of unauthorised access.`,
+        emergencyArrangements: `The nearest A&E is located at University Hospital Coventry and Warwickshire (UHCW) - Clifford Bridge Road, Coventry, CV2 2DX.\nAll UCtel staff will familiarise themselves with the site's emergency evacuation procedures during induction.\nFirst Aid provision will be in line with site arrangements, with UCtel supervisors ensuring operatives are aware of first aid points and trained first aiders.`,
+        
+        // Step 6: Equipment & Materials
+        tools: JSON.parse(JSON.stringify(DEFAULT_TOOLS)),
+        materials: JSON.parse(JSON.stringify(DEFAULT_MATERIALS)),
+    };
   });
 
   // --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
   // Handler Functions
   // --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+  
+  const updateFormData = useCallback((newPartialData) => {
+    setFormData(prev => ({ ...prev, ...newPartialData }));
+  }, []);
+  
+  const updateAndCompileTasks = useCallback((newTasks) => {
+      setFormData(prev => ({
+          ...prev,
+          selectedTasks: newTasks,
+          methodStatement: compileMethodStatement(newTasks)
+      }));
+  }, []);
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    updateFormData({ [name]: type === 'checkbox' ? checked : value });
   };
   
   const handleTextAreaChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    updateFormData({ [name]: value });
   };
 
   const handleTemplateChange = (e) => {
     const templateKey = e.target.value;
     if (JOB_TEMPLATES[templateKey]) {
+      const newTasks = initializeSelectedTasks(templateKey);
       setFormData(prev => ({
-        ...prev,
-        jobTemplate: templateKey,
-        projectDescription: JOB_TEMPLATES[templateKey].description,
-        methodStatement: JOB_TEMPLATES[templateKey].methodStatement,
+          ...prev,
+          jobTemplate: templateKey,
+          projectDescription: JOB_TEMPLATES[templateKey].description,
+          selectedTasks: newTasks,
+          methodStatement: compileMethodStatement(newTasks)
       }));
     }
+  };
+  
+  const handleTaskToggle = (taskId) => {
+      const newTasks = formData.selectedTasks.map(task => 
+          task.taskId === taskId ? { ...task, enabled: !task.enabled } : task
+      );
+      updateAndCompileTasks(newTasks);
+  };
+  
+  const handleTaskOptionChange = (taskId, newOption) => {
+      const newTasks = formData.selectedTasks.map(task => 
+          task.taskId === taskId ? { ...task, selectedOption: newOption } : task
+      );
+      updateAndCompileTasks(newTasks);
   };
 
   const handleRiskToggle = (riskKey, hazardId) => {
@@ -302,7 +409,7 @@ export default function App() {
     switch (step) {
       case 1: return <Step1 data={formData} handler={handleInputChange} />;
       case 2: return <Step2 data={formData} onChange={handleProjectTeamChange} onAdd={addTeamMember} onRemove={removeTeamMember} />;
-      case 3: return <Step3 data={formData} handleTemplateChange={handleTemplateChange} handleTextAreaChange={handleTextAreaChange} />;
+      case 3: return <Step3 data={formData} handlers={{handleTemplateChange, handleTaskToggle, handleTaskOptionChange, handleTextAreaChange}} />;
       case 4: return <Step4 data={formData} handler={handleRiskToggle} />;
       case 5: return <Step5 data={formData} onToggle={handleSelectableListToggle} onInputChange={handleInputChange} onTextAreaChange={handleTextAreaChange} />;
       case 6: return <Step6 data={formData} onToggle={handleSelectableListToggle} onCustomChange={handleCustomItemChange} onAddCustom={addCustomItem} onRemoveCustom={removeCustomItem} />;
@@ -472,23 +579,54 @@ const Step2 = ({ data, onChange, onAdd, onRemove }) => (
 );
 
 
-const Step3 = ({ data, handleTemplateChange, handleTextAreaChange }) => (
-    <div>
-        <h2 className="text-2xl font-bold text-[var(--uctel-blue)] border-b-2 border-[var(--uctel-orange)] pb-2 mb-6">Step 3: Job Details & Method Statement</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="flex flex-col md:col-span-2">
-                <label htmlFor="jobTemplate" className="mb-2 font-semibold text-slate-700">Select Job Template</label>
-                <select id="jobTemplate" name="jobTemplate" value={data.jobTemplate} onChange={handleTemplateChange} className="p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[var(--uctel-blue)] focus:border-[var(--uctel-blue)] transition">
-                    {Object.keys(JOB_TEMPLATES).map(key => (
-                        <option key={key} value={key}>{JOB_TEMPLATES[key].name}</option>
-                    ))}
-                </select>
+const Step3 = ({ data, handlers }) => {
+    const { handleTemplateChange, handleTaskToggle, handleTaskOptionChange, handleTextAreaChange } = handlers;
+    
+    return (
+        <div>
+            <h2 className="text-2xl font-bold text-[var(--uctel-blue)] border-b-2 border-[var(--uctel-orange)] pb-2 mb-6">Step 3: Build Method Statement</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex flex-col md:col-span-2">
+                    <label htmlFor="jobTemplate" className="mb-2 font-semibold text-slate-700">1. Select Job Template</label>
+                    <select id="jobTemplate" name="jobTemplate" value={data.jobTemplate} onChange={handleTemplateChange} className="p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[var(--uctel-blue)] focus:border-[var(--uctel-blue)] transition">
+                        {Object.keys(JOB_TEMPLATES).map(key => (
+                            <option key={key} value={key}>{JOB_TEMPLATES[key].name}</option>
+                        ))}
+                    </select>
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="mb-2 font-semibold text-slate-700 block">2. Configure Standard Tasks</label>
+                  <div className="space-y-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                      {data.selectedTasks.map((task, index) => {
+                          const taskInfo = STANDARD_TASKS[task.taskId];
+                          const optionKeys = Object.keys(taskInfo.options);
+                          return (
+                              <div key={task.taskId} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-3 bg-white rounded-md border">
+                                  <label className="flex items-center gap-3 font-semibold flex-shrink-0 cursor-pointer">
+                                      <input type="checkbox" checked={task.enabled} onChange={() => handleTaskToggle(task.taskId)} className="h-5 w-5 text-[var(--uctel-teal)] border-slate-300 rounded focus:ring-[var(--uctel-teal)]" />
+                                      <span>{`Step ${index + 1}: ${taskInfo.title}`}</span>
+                                  </label>
+                                  {task.enabled && optionKeys.length > 1 && (
+                                      <select value={task.selectedOption} onChange={(e) => handleTaskOptionChange(task.taskId, e.target.value)} className="p-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-[var(--uctel-blue)] transition w-full sm:w-auto text-sm">
+                                          {optionKeys.map(key => (
+                                              <option key={key} value={key}>{taskInfo.options[key].name}</option>
+                                          ))}
+                                      </select>
+                                  )}
+                              </div>
+                          );
+                      })}
+                  </div>
+                </div>
+
+                <div className="flex flex-col md:col-span-2">
+                   <TextArea label="3. Review and Edit Compiled Method Statement" name="methodStatement" value={data.methodStatement} onChange={handleTextAreaChange} rows={15} />
+                </div>
             </div>
-            <TextArea label="Project Description" name="projectDescription" value={data.projectDescription} onChange={handleTextAreaChange} rows={3} />
-            <TextArea label="Method Statement / Sequence of Works" name="methodStatement" value={data.methodStatement} onChange={handleTextAreaChange} rows={12} />
         </div>
-    </div>
-);
+    );
+};
 
 const Step4 = ({ data, handler }) => (
   <div>
@@ -726,7 +864,7 @@ const PrintableDocument = ({ data }) => {
 
                 <div style={styles.section}>
                     <h2 style={styles.h2}>3.0 Method Statement</h2>
-                    <pre style={styles.pre}>{data.methodStatement}</pre>
+                    <pre style={{...styles.pre, padding: '0', backgroundColor: 'transparent', border: 'none'}}>{data.methodStatement}</pre>
                 </div>
                 
                 <div style={{...styles.section, pageBreakBefore: 'always'}}>
