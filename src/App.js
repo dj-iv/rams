@@ -91,7 +91,33 @@ const buildSelectedTasks = (templateKey, templates, tasks) => {
         };
     }).filter(Boolean);
 };
+const buildInitialTasks = (allTasks, template, templates) => {
+    if (!template || !templates[template]) {
+        // If no template, return all tasks, sorted by order, and disabled.
+        return Object.entries(allTasks)
+            .sort(([, a], [, b]) => (a.order || 0) - (b.order || 0))
+            .map(([taskId, taskInfo]) => ({
+                id: `${taskId}-${Date.now()}`,
+                taskId: taskId,
+                selectedOption: Object.keys(taskInfo.options)[0],
+                description: Object.values(taskInfo.options)[0].description,
+                enabled: false,
+            }));
+    }
 
+    const templateTaskIds = templates[template].taskIds || [];
+
+    // Return all tasks, sorted by order. Enable the ones that are in the template.
+    return Object.entries(allTasks)
+        .sort(([, a], [, b]) => (a.order || 0) - (b.order || 0))
+        .map(([taskId, taskInfo]) => ({
+            id: `${taskId}-${Date.now()}`,
+            taskId: taskId,
+            selectedOption: Object.keys(taskInfo.options)[0],
+            description: Object.values(taskInfo.options)[0].description,
+            enabled: templateTaskIds.includes(taskId), // Enable if task ID is in the template
+        }));
+};
 // UPDATED: This is now a simple inline form, not a modal.
 const NewTaskForm = ({ onSave, onCancel }) => {
     const [title, setTitle] = useState('');
@@ -193,7 +219,7 @@ export default function App() {
   const [showPreview, setShowPreview] = useState(false);
   const [formData, setFormData] = useState(null);
 
-  useEffect(() => {
+useEffect(() => {
      if (!isLoading && !formData && Object.keys(allTasks).length > 0) {
       const initialTemplateKey = 'G43';
       const initialFormState = {
@@ -207,7 +233,8 @@ export default function App() {
           preparedByPhone: '+44 7730 890403',
           projectTeam: [ { id: 1, name: 'James Smith', role: 'Project Coordinator', phone: '+44 7730 890403'}, { id: 2, name: '', role: '', phone: ''} ],
           jobTemplate: initialTemplateKey,
-          selectedTasks: buildSelectedTasks(initialTemplateKey, allTemplates, allTasks),
+          // This line is updated to use the new function
+          selectedTasks: buildInitialTasks(allTasks, initialTemplateKey, allTemplates),
           risks: JSON.parse(JSON.stringify(RISK_ASSESSMENTS)),
           permits: JSON.parse(JSON.stringify(DEFAULT_PERMITS)),
           ppe: JSON.parse(JSON.stringify(DEFAULT_PPE)),
@@ -266,9 +293,19 @@ export default function App() {
       }));
   };
   const handleCreateAndAddTask = async ({ title, description }) => {
+    // --- START: New logic to calculate the order number ---
+    // Get all current order numbers, defaulting to 0 if one doesn't exist.
+    const existingOrders = Object.values(allTasks).map(task => task.order || 0);
+    // Find the highest number, or start from 0 if no tasks exist.
+    const maxOrder = Math.max(0, ...existingOrders);
+    // The new order will be the next number in the sequence.
+    const newOrder = maxOrder + 1;
+    // --- END: New logic ---
+
     const newTaskId = `task_${Date.now()}`;
     const newTaskData = {
       title: title,
+      order: newOrder, // Add the new order number to the data object
       options: {
         default: {
           name: "Default",
@@ -276,11 +313,10 @@ export default function App() {
         }
       }
     };
+    
     try {
-      // This line saves the new task to the database
       await setDoc(doc(db, "standardTasks", newTaskId), newTaskData);
       
-      // These lines update the app's state so you see the new task immediately
       setAllTasks(prev => ({ ...prev, [newTaskId]: newTaskData }));
       const newTaskForSequence = {
         id: `${newTaskId}-${Date.now()}`,
@@ -294,7 +330,6 @@ export default function App() {
         selectedTasks: [...prev.selectedTasks, newTaskForSequence]
       }));
       
-      // This hides the form
       setShowNewTaskForm(false);
 
     } catch (error) {
