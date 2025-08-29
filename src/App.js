@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import uctelLogo from './assets/uctel-logo.png';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { db } from './firebase'; 
-import { collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore'; 
+import { collection, getDocs, doc, setDoc, deleteDoc, addDoc } from 'firebase/firestore'; 
 import { RISK_ASSESSMENTS, DEFAULT_PERMITS, DEFAULT_PPE, DEFAULT_TOOLS, DEFAULT_MATERIALS } from './constants';
 import Step1 from './components/steps/Step1';
 import Step2 from './components/steps/Step2';
@@ -758,9 +758,9 @@ useEffect(() => {
     }
   }, [formData]);
 
-  const addCustomItem = useCallback(async (listName) => {
-    const newItem = { id: `custom-${Date.now()}`, name: '', selected: true, isCustom: true };
-    try {
+  const addCustomItem = useCallback(async (listName, name) => {
+    const newItem = { id: `custom-${Date.now()}`, name: name || '', selected: true, isCustom: true };
+       try {
       await setDoc(doc(db, listName, newItem.id), newItem);
       setFormData(prev => ({
           ...prev,
@@ -832,8 +832,8 @@ useEffect(() => {
             handleAddNewSafetyCategory
           }} 
         />;
-      case 6: return <Step6 data={formData} handlers={{ handleSelectableListToggle, addCustomItem, handleCustomItemChange, removeCustomItem }} />;
-      
+      case 6: return <Step6 data={formData} handlers={{ handleSelectableListToggle, handleAddCustomSafetyItem: addCustomItem, handleCustomItemChange, removeCustomItem }} />;
+     
       case 7: return <Step7 previewHandler={() => setShowPreview(true)} />;
       default: return <Step1 data={formData} handler={handleInputChange} />;
     }
