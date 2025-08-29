@@ -12,33 +12,30 @@ import Step6 from './components/steps/Step6';
 import Step7 from './components/steps/Step7';
 import PrintableDocument from './components/PrintableDocument';
 
-import FormSection from './components/ui/FormSection';
-import { Input, TextArea } from './components/ui/FormControls';
-
 const buildInitialTasks = (allTasks, template, templates) => {
-    if (!template || !templates[template]) {
-        // If no template, return all tasks, sorted by order, and disabled.
-        return Object.entries(allTasks)
-            .sort(([, a], [, b]) => (a.order || 0) - (b.order || 0))
-            .map(([taskId, taskInfo]) => ({
-                id: `${taskId}-${Date.now()}`,
-                taskId: taskId,
-                selectedOption: Object.keys(taskInfo.options)[0],
-                description: Object.values(taskInfo.options)[0].description,
-                enabled: false,
-            }));
-    }
-    const templateTaskIds = templates[template].taskIds || [];
-    // Return all tasks, sorted by order. Enable the ones that are in the template.
+  if (!template || !templates[template]) {
+    // If no template, return all tasks, sorted by order, and disabled.
     return Object.entries(allTasks)
-        .sort(([, a], [, b]) => (a.order || 0) - (b.order || 0))
-        .map(([taskId, taskInfo]) => ({
-            id: `${taskId}-${Date.now()}`,
-            taskId: taskId,
-            selectedOption: Object.keys(taskInfo.options)[0],
-            description: Object.values(taskInfo.options)[0].description,
-            enabled: templateTaskIds.includes(taskId), // Enable if task ID is in the template
-        }));
+      .sort(([, a], [, b]) => (a.order || 0) - (b.order || 0))
+      .map(([taskId, taskInfo]) => ({
+        id: `${taskId}-${Date.now()}`,
+        taskId: taskId,
+        selectedOption: Object.keys(taskInfo.options)[0],
+        description: Object.values(taskInfo.options)[0].description,
+        enabled: false,
+      }));
+  }
+  const templateTaskIds = templates[template].taskIds || [];
+  // Return all tasks, sorted by order. Enable the ones that are in the template.
+  return Object.entries(allTasks)
+    .sort(([, a], [, b]) => (a.order || 0) - (b.order || 0))
+    .map(([taskId, taskInfo]) => ({
+      id: `${taskId}-${Date.now()}`,
+      taskId: taskId,
+      selectedOption: Object.keys(taskInfo.options)[0],
+      description: Object.values(taskInfo.options)[0].description,
+      enabled: templateTaskIds.includes(taskId), // Enable if task ID is in the template
+    }));
 };
 
 const buildSelectedTasks = (template, templates, allTasks) => {
@@ -58,27 +55,27 @@ const NewTaskForm = ({ onSave, onCancel }) => {
         onSave({ title, description });
     };
 
-    return (
-        <div class="mt-3 p-3 bg-teal-50 border border-teal-200 rounded-md space-y-2">
-            <h3 class="font-bold text-sm text-slate-700">Create New Standard Task</h3>
+  return (
+    <div className="mt-3 p-3 bg-teal-50 border border-teal-200 rounded-md space-y-2">
+      <h3 className="font-bold text-sm text-slate-700">Create New Standard Task</h3>
             <input
                 type="text"
                 placeholder="Task Title (e.g., 'Final Site Cleanup')"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                class="w-full p-2 border border-slate-300 rounded-md text-sm"
+                   className="w-full p-2 border border-slate-300 rounded-md text-sm"
             />
             <textarea
                 placeholder="Default task description..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                class="w-full p-2 border border-slate-300 rounded-md text-sm"
+                   className="w-full p-2 border border-slate-300 rounded-md text-sm"
                 rows={3}
             />
-            <div class="flex gap-2">
-                <button onClick={handleSave} class="bg-[var(--uctel-teal)] text-white font-semibold py-1 px-3 rounded-md text-sm">Save Task</button>
-                <button onClick={onCancel} class="bg-slate-200 text-slate-700 py-1 px-3 rounded-md text-sm">Cancel</button>
-            </div>
+      <div className="flex gap-2">
+        <button onClick={handleSave} className="bg-[var(--uctel-teal)] text-white font-semibold py-1 px-3 rounded-md text-sm">Save Task</button>
+        <button onClick={onCancel} className="bg-slate-200 text-slate-700 py-1 px-3 rounded-md text-sm">Cancel</button>
+      </div>
         </div>
     );
 };
@@ -103,34 +100,34 @@ const NewTemplateForm = ({ onSave, onCancel, allTemplates }) => {
         onSave({ id: id.toUpperCase(), name, description });
     };
     
-    return (
-        <div class="mt-3 p-3 bg-teal-50 border border-teal-200 rounded-md space-y-2">
-            <h3 class="font-bold text-sm text-slate-700">Create New Template</h3>
+  return (
+    <div className="mt-3 p-3 bg-teal-50 border border-teal-200 rounded-md space-y-2">
+      <h3 className="font-bold text-sm text-slate-700">Create New Template</h3>
             <input
                 type="text"
                 placeholder="Template ID (e.g., 'G51')"
                 value={id}
                 onChange={(e) => setId(e.target.value)}
-                class="w-full p-2 border border-slate-300 rounded-md text-sm"
+        className="w-full p-2 border border-slate-300 rounded-md text-sm"
             />
             <input
                 type="text"
                 placeholder="Template Name (e.g., 'CEL-FI G51 Installation')"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                class="w-full p-2 border border-slate-300 rounded-md text-sm"
+        className="w-full p-2 border border-slate-300 rounded-md text-sm"
             />
             {/* New Textarea for the description */}
-            <textarea
+      <textarea
                 placeholder="Template Description..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                class="w-full p-2 border border-slate-300 rounded-md text-sm"
+        className="w-full p-2 border border-slate-300 rounded-md text-sm"
                 rows={3}
             />
-            <div class="flex gap-2">
-                <button onClick={handleSave} class="bg-[var(--uctel-teal)] text-white font-semibold py-1 px-3 rounded-md text-sm">Save</button>
-                <button onClick={onCancel} class="bg-slate-200 text-slate-700 py-1 px-3 rounded-md text-sm">Cancel</button>
+            <div className="flex gap-2">
+        <button onClick={handleSave} className="bg-[var(--uctel-teal)] text-white font-semibold py-1 px-3 rounded-md text-sm">Save</button>
+        <button onClick={onCancel} className="bg-slate-200 text-slate-700 py-1 px-3 rounded-md text-sm">Cancel</button>
             </div>
         </div>
     );
@@ -149,16 +146,16 @@ const AddNewOptionForm = ({ taskId, onSave, onCancel }) => {
         }
     };
     
-    return (
-        <div class="mt-3 p-3 bg-teal-50 border border-teal-200 rounded-md space-y-2">
-            <input type="text" placeholder="New Option Name" value={name} onChange={e => setName(e.target.value)} class="w-full p-2 border border-slate-300 rounded-md text-sm" />
-            <textarea placeholder="New Option Description" value={description} onChange={e => setDescription(e.target.value)} class="w-full p-2 border border-slate-300 rounded-md text-sm" rows={3}></textarea>
-            <div class="flex gap-2">
-                <button onClick={handleSave} class="bg-[var(--uctel-teal)] text-white font-semibold py-1 px-3 rounded-md text-sm">Save</button>
-                <button onClick={onCancel} class="bg-slate-200 text-slate-700 py-1 px-3 rounded-md text-sm">Cancel</button>
-            </div>
-        </div>
-    );
+  return (
+    <div className="mt-3 p-3 bg-teal-50 border border-teal-200 rounded-md space-y-2">
+      <input type="text" placeholder="New Option Name" value={name} onChange={e => setName(e.target.value)} className="w-full p-2 border border-slate-300 rounded-md text-sm" />
+      <textarea placeholder="New Option Description" value={description} onChange={e => setDescription(e.target.value)} className="w-full p-2 border border-slate-300 rounded-md text-sm" rows={3}></textarea>
+      <div className="flex gap-2">
+        <button onClick={handleSave} className="bg-[var(--uctel-teal)] text-white font-semibold py-1 px-3 rounded-md text-sm">Save</button>
+        <button onClick={onCancel} className="bg-slate-200 text-slate-700 py-1 px-3 rounded-md text-sm">Cancel</button>
+      </div>
+    </div>
+  );
 };
 
 const TaskItem = ({ task, index, allTasks, handlers }) => {
@@ -181,43 +178,43 @@ const TaskItem = ({ task, index, allTasks, handlers }) => {
     return (
         <Draggable draggableId={task.id} index={index}>
             {(provided, snapshot) => (
-                <div 
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    class={`p-4 bg-white rounded-lg border space-y-3 ${snapshot.isDragging ? 'shadow-lg border-[var(--uctel-blue)]' : 'border-slate-200'}`}
-                >
-                    <div class="flex items-center gap-3">
-                        <div {...provided.dragHandleProps} class="cursor-grab text-slate-400 hover:text-[var(--uctel-blue)]">
-                           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
-                        </div>
-                        <label class="flex-grow flex items-center gap-3 font-semibold cursor-pointer">
-                            <input type="checkbox" checked={task.enabled} onChange={() => handlers.handleTaskToggle(task.id)} class="h-5 w-5 text-[var(--uctel-teal)] border-slate-300 rounded focus:ring-[var(--uctel-teal)]" />
-                            <span>{`${taskInfo.title}`}</span>
-                        </label>
-                        {task.enabled && (
-                            <select value={task.selectedOption} onChange={handleOptionSelect} class="p-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-[var(--uctel-blue)] transition w-full sm:w-auto text-sm max-w-[200px]">
-                                {optionKeys.map(key => (
-                                    <option key={key} value={key}>{taskInfo.options[key].name}</option>
-                                ))}
-                                <option value="--add-new--" class="font-bold text-[var(--uctel-blue)]"> + Add New Option...</option>
-                            </select>
-                        )}
-                    </div>
-                    {task.enabled && (
-                        <div class="pl-12">
-                             {showNewOptionForm ? (
-                                <AddNewOptionForm taskId={task.taskId} onSave={handlers.handleAddNewOption} onCancel={() => setShowNewOptionForm(false)} />
-                            ) : (
-                                <textarea 
-                                    value={task.description}
-                                    onChange={(e) => handlers.handleTaskDescriptionChange(task.id, e.target.value)}
-                                    class="w-full p-2 border border-slate-200 rounded-md text-sm bg-slate-50"
-                                    rows={3}
-                                />
-                            )}
-                        </div>
-                    )}
-                </div>
+        <div
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          className={`p-4 bg-white rounded-lg border space-y-3 ${snapshot.isDragging ? 'shadow-lg border-[var(--uctel-blue)]' : 'border-slate-200'}`}
+        >
+          <div className="flex items-center gap-3">
+            <div {...provided.dragHandleProps} className="cursor-grab text-slate-400 hover:text-[var(--uctel-blue)]">
+               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+            </div>
+            <label className="flex-grow flex items-center gap-3 font-semibold cursor-pointer">
+              <input type="checkbox" checked={task.enabled} onChange={() => handlers.handleTaskToggle(task.id)} className="h-5 w-5 text-[var(--uctel-teal)] border-slate-300 rounded focus:ring-[var(--uctel-teal)]" />
+              <span>{`${taskInfo.title}`}</span>
+            </label>
+            {task.enabled && (
+              <select value={task.selectedOption} onChange={handleOptionSelect} className="p-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-[var(--uctel-blue)] transition w-full sm:w-auto text-sm max-w-[200px]">
+                {optionKeys.map(key => (
+                  <option key={key} value={key}>{taskInfo.options[key].name}</option>
+                ))}
+                <option value="--add-new--" className="font-bold text-[var(--uctel-blue)]"> + Add New Option...</option>
+              </select>
+            )}
+          </div>
+          {task.enabled && (
+            <div className="pl-12">
+               {showNewOptionForm ? (
+                <AddNewOptionForm taskId={task.taskId} onSave={handlers.handleAddNewOption} onCancel={() => setShowNewOptionForm(false)} />
+              ) : (
+                <textarea 
+                  value={task.description}
+                  onChange={(e) => handlers.handleTaskDescriptionChange(task.id, e.target.value)}
+                  className="w-full p-2 border border-slate-200 rounded-md text-sm bg-slate-50"
+                  rows={3}
+                />
+              )}
+            </div>
+          )}
+        </div>
             )}
         </Draggable>
     );
@@ -226,16 +223,16 @@ const TaskItem = ({ task, index, allTasks, handlers }) => {
 const Step3 = ({ data, allTasks, allTemplates, handlers, showNewTemplateForm, showNewTaskForm }) => {    
     return (
         <div>
-            <h2 class="text-2xl font-bold text-[var(--uctel-blue)] border-b-2 border-[var(--uctel-orange)] pb-2 mb-6">Step 3: Build Method Statement</h2>
-            <div class="space-y-6">
+      <h2 className="text-2xl font-bold text-[var(--uctel-blue)] border-b-2 border-[var(--uctel-orange)] pb-2 mb-6">Step 3: Build Method Statement</h2>
+      <div className="space-y-6">
                 <div>
-                    <label htmlFor="jobTemplate" class="mb-2 font-semibold text-slate-700 block">1. Select Job Template</label>
-                    <div class="flex gap-2">
-                        <select id="jobTemplate" name="jobTemplate" value={data.jobTemplate} onChange={handlers.handleTemplateChange} class="flex-grow p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[var(--uctel-blue)] focus:border-[var(--uctel-blue)] transition">
+          <label htmlFor="jobTemplate" className="mb-2 font-semibold text-slate-700 block">1. Select Job Template</label>
+          <div className="flex gap-2">
+            <select id="jobTemplate" name="jobTemplate" value={data.jobTemplate} onChange={handlers.handleTemplateChange} className="flex-grow p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[var(--uctel-blue)] focus:border-[var(--uctel-blue)] transition">
                             {Object.keys(allTemplates).map(key => (
                                 <option key={key} value={key}>{allTemplates[key].name}</option>
                             ))}
-                            <option value="--add-new--" class="font-bold text-[var(--uctel-blue)]"> + Add New Template...</option>
+              <option value="--add-new--" className="font-bold text-[var(--uctel-blue)]"> + Add New Template...</option>
                         </select>
                     </div>
                     {showNewTemplateForm && (
@@ -247,12 +244,12 @@ const Step3 = ({ data, allTasks, allTemplates, handlers, showNewTemplateForm, sh
                     )}
                 </div>
                 <div>
-                    <label class="mb-2 font-semibold text-slate-700 block">2. Configure &amp; Order Sequence of Works</label>
-                    <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
+          <label className="mb-2 font-semibold text-slate-700 block">2. Configure &amp; Order Sequence of Works</label>
+          <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
                         <DragDropContext onDragEnd={handlers.handleOnDragEnd}>
                             <Droppable droppableId="tasks">
                                 {(provided) => (
-                                    <div {...provided.droppableProps} ref={provided.innerRef} class="space-y-3">
+                  <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
                                         {data.selectedTasks.map((task, index) => (
                                             <TaskItem key={task.id} task={task} index={index} allTasks={allTasks} handlers={handlers} />
                                         ))}
@@ -261,15 +258,15 @@ const Step3 = ({ data, allTasks, allTemplates, handlers, showNewTemplateForm, sh
                                 )}
                             </Droppable>
                         </DragDropContext>
-                        <div class="mt-4 pt-4 border-t border-slate-200">
-                            {!showNewTaskForm ? (
-                                <button 
-                                    onClick={() => handlers.setShowNewTaskForm(true)} 
-                                    class="w-full bg-blue-100 text-[var(--uctel-blue)] font-semibold py-2 px-4 rounded-lg hover:bg-blue-200 transition-colors text-sm"
-                                >
-                                    + Create & Add New Standard Task
-                                </button>
-                            ) : (
+            <div className="mt-4 pt-4 border-t border-slate-200">
+              {!showNewTaskForm ? (
+                <button 
+                  onClick={() => handlers.setShowNewTaskForm(true)} 
+                  className="w-full bg-blue-100 text-[var(--uctel-blue)] font-semibold py-2 px-4 rounded-lg hover:bg-blue-200 transition-colors text-sm"
+                >
+                  + Create & Add New Standard Task
+                </button>
+              ) : (
                                 <NewTaskForm
                                     onSave={handlers.handleCreateAndAddTask}
                                     onCancel={() => handlers.setShowNewTaskForm(false)}
@@ -285,6 +282,7 @@ const Step3 = ({ data, allTasks, allTemplates, handlers, showNewTemplateForm, sh
 
 export default function App() {
   const [formData, setFormData] = useState(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [dbPpe, setDbPpe] = useState([]);
   const [dbTools, setDbTools] = useState([]);
   const [dbMaterials, setDbMaterials] = useState([]);
@@ -786,7 +784,7 @@ useEffect(() => {
   const prevStep = () => setStep(s => Math.max(s - 1, 1));
 
   if (isLoading || !formData) {
-      return <div class="text-center p-12">Loading RAMS Generator...</div>
+      return <div className="text-center p-12">Loading RAMS Generator...</div>
   }
 
   const renderStep = () => {
@@ -844,39 +842,39 @@ useEffect(() => {
 
   return (
     <>
-      <div class="bg-slate-100 font-sans text-slate-800 min-h-screen" style={{'--uctel-orange': '#d88e43', '--uctel-teal': '#008080', '--uctel-blue': '#2c4f6b'}}>
-        <div class="container mx-auto p-4 md:p-8">
-          <header class="text-center mb-8 flex flex-col items-center">
-             <img src={uctelLogo} alt="UCtel Logo" class="h-12 mb-4" />
-           <h1 class="text-4xl font-bold text-[var(--uctel-blue)]">RAMS Generator</h1>
-            <p class="text-slate-600 mt-2">A step-by-step wizard to create your Risk Assessment and Method Statements.</p>
+      <div className="bg-slate-100 font-sans text-slate-800 min-h-screen" style={{'--uctel-orange': '#d88e43', '--uctel-teal': '#008080', '--uctel-blue': '#2c4f6b'}}>
+        <div className="container mx-auto p-4 md:p-8">
+          <header className="text-center mb-8 flex flex-col items-center">
+             <img src={uctelLogo} alt="UCtel Logo" className="h-12 mb-4" />
+           <h1 className="text-4xl font-bold text-[var(--uctel-blue)]">RAMS Generator</h1>
+            <p className="text-slate-600 mt-2">A step-by-step wizard to create your Risk Assessment and Method Statements.</p>
           </header>
-          <div class="bg-white p-6 md:p-8 rounded-2xl shadow-xl max-w-4xl mx-auto">
-            <div class="mb-8">
-                <div class="flex justify-between mb-2 text-xs sm:text-sm">
+          <div className="bg-white p-6 md:p-8 rounded-2xl shadow-xl max-w-4xl mx-auto">
+            <div className="mb-8">
+                <div className="flex justify-between mb-2 text-xs sm:text-sm">
                     {progressLabels.map((label, index) => (
                        <span 
                            key={label} 
-                           class={`font-bold cursor-pointer transition-colors hover:text-[var(--uctel-teal)] ${step >= index + 1 ? 'text-[var(--uctel-blue)]' : 'text-slate-400'}`}
+                           className={`font-bold cursor-pointer transition-colors hover:text-[var(--uctel-teal)] ${step >= index + 1 ? 'text-[var(--uctel-blue)]' : 'text-slate-400'}`}
                            onClick={() => setStep(index + 1)}
                        >
                            {label}
                        </span>
                     ))}
                 </div>
-                <div class="w-full bg-slate-200 rounded-full h-2.5">
-                    <div class="bg-[var(--uctel-teal)] h-2.5 rounded-full transition-all duration-500" style={{ width: `${((step - 1) / (TOTAL_STEPS - 1)) * 100}%` }}></div>
+                <div className="w-full bg-slate-200 rounded-full h-2.5">
+                    <div className="bg-[var(--uctel-teal)] h-2.5 rounded-full transition-all duration-500" style={{ width: `${((step - 1) / (TOTAL_STEPS - 1)) * 100}%` }}></div>
                 </div>
             </div>
 
             {renderStep()}
             
-            <div class="mt-8 pt-6 border-t border-slate-200 flex justify-between items-center">
-              <button onClick={prevStep} disabled={step === 1} class="bg-slate-200 text-slate-700 font-semibold py-2 px-6 rounded-lg hover:bg-slate-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Back</button>
+            <div className="mt-8 pt-6 border-t border-slate-200 flex justify-between items-center">
+              <button onClick={prevStep} disabled={step === 1} className="bg-slate-200 text-slate-700 font-semibold py-2 px-6 rounded-lg hover:bg-slate-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Back</button>
               {step < TOTAL_STEPS ? (
-                <button onClick={nextStep} class="bg-[var(--uctel-blue)] text-white font-semibold py-2 px-6 rounded-lg hover:bg-opacity-90 transition-colors">Next Step &rarr;</button>
+                <button onClick={nextStep} className="bg-[var(--uctel-blue)] text-white font-semibold py-2 px-6 rounded-lg hover:bg-opacity-90 transition-colors">Next Step &rarr;</button>
               ) : (
-                <button onClick={() => setShowPreview(true)} class="bg-[var(--uctel-teal)] text-white font-semibold py-2 px-6 rounded-lg hover:bg-opacity-90 transition-colors">Preview Document</button>
+                <button onClick={() => setShowPreview(true)} className="bg-[var(--uctel-teal)] text-white font-semibold py-2 px-6 rounded-lg hover:bg-opacity-90 transition-colors">Preview Document</button>
               )}
             </div>
           </div>
@@ -884,12 +882,12 @@ useEffect(() => {
       </div>
       
       {showPreview && (
-          <div class="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-start p-4 md:p-8 overflow-y-auto z-50" onClick={() => setShowPreview(false)}>
-        <div class="relative" onClick={(e) => e.stopPropagation()} ref={previewRef}>
-           <button onClick={() => setShowPreview(false)} class="absolute -top-4 -right-4 bg-white rounded-full p-2 shadow-lg hover:bg-slate-200 z-10">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-start p-4 md:p-8 overflow-y-auto z-50" onClick={() => setShowPreview(false)}>
+        <div className="relative" onClick={(e) => e.stopPropagation()} ref={previewRef}>
+           <button onClick={() => setShowPreview(false)} className="absolute -top-4 -right-4 bg-white rounded-full p-2 shadow-lg hover:bg-slate-200 z-10">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
            </button>
-                   <button onClick={() => {
+                   <button disabled={isGeneratingPdf} onClick={() => {
             // Open a new window and print its contents. This preserves CSS and page-breaks.
             const element = previewRef.current?.querySelector('[style*="width: 210mm"]') || previewRef.current;
             if (!element) return;
@@ -910,11 +908,13 @@ useEffect(() => {
             setTimeout(() => {
               printWindow.focus();
               printWindow.print();
+              setIsGeneratingPdf(false);
             }, 500);
-           }} class="absolute -top-4 -right-20 bg-white rounded-full p-2 shadow-lg hover:bg-slate-200 z-10" title="Print / Save as PDF">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17H7V7h10v10zm0 0v4H7v-4"/></svg>
+            setIsGeneratingPdf(true);
+           }} className="absolute -top-4 -right-20 bg-white rounded-full p-2 shadow-lg hover:bg-slate-200 z-10" title="Print / Save as PDF">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17H7V7h10v10zm0 0v4H7v-4"/></svg>
            </button>
-          <button onClick={async () => {
+                  <button disabled={isGeneratingPdf} onClick={async () => {
             const element = previewRef.current?.querySelector('[style*="width: 210mm"]') || previewRef.current;
             if (!element) return;
             const html = `<!doctype html><html><head><meta charset="utf-8"><title>RAMS Document</title>` +
@@ -922,15 +922,28 @@ useEffect(() => {
               `</head><body>${element.outerHTML}</body></html>`;
 
             try {
+              setIsGeneratingPdf(true);
               const resp = await fetch('/api/generate-pdf', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ html })
               });
+              const contentType = resp.headers.get('content-type') || '';
               if (!resp.ok) {
                 const text = await resp.text().catch(() => null);
                 console.error('Server PDF generation error response:', resp.status, text);
                 throw new Error(text || 'Failed to generate PDF');
+              }
+              if (contentType.includes('text/html')) {
+                // server returned a print fallback HTML page
+                const html = await resp.text();
+                const w = window.open('', '_blank');
+                if (!w) return alert('Popup blocked. Please allow popups to use the print fallback.');
+                w.document.open();
+                w.document.write(html);
+                w.document.close();
+                setIsGeneratingPdf(false);
+                return;
               }
               const blob = await resp.blob();
               const url = window.URL.createObjectURL(blob);
@@ -943,11 +956,22 @@ useEffect(() => {
               window.URL.revokeObjectURL(url);
             } catch (err) {
               console.error(err);
-                            alert('Server PDF generation failed. See console for details.');
+              const message = (err && err.message) ? err.message : 'Server PDF generation failed';
+              alert('Server PDF generation failed: ' + message);
+            } finally {
+              setIsGeneratingPdf(false);
             }
-          }} class="absolute -top-4 -right-40 bg-white rounded-full p-2 shadow-lg hover:bg-slate-200 z-10" title="Generate PDF (server)">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M12 12v8m0-8l-4 4m4-4l4 4M12 4v4"/></svg>
+          }} className="absolute -top-4 -right-40 bg-white rounded-full p-2 shadow-lg hover:bg-slate-200 z-10" title="Generate PDF (server)">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M12 12v8m0-8l-4 4m4-4l4 4M12 4v4"/></svg>
           </button>
+                  {isGeneratingPdf && (
+                      <div className="absolute -top-4 -right-56 bg-white rounded-full p-2 shadow-lg z-10 flex items-center justify-center" title="Generating PDF">
+                          <svg className="animate-spin h-5 w-5 text-[var(--uctel-blue)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                          </svg>
+                      </div>
+                  )}
           <PrintableDocument data={formData} allTasks={allTasks}/>
         </div>
           </div>

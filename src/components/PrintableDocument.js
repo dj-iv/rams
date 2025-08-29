@@ -21,34 +21,34 @@ const RiskMatrix = ({ title, likelihood, severity }) => {
         <div style={{ flexShrink: 0 }}>
             <h4 style={{ fontWeight: 'bold', textAlign: 'center', fontSize: '10pt', marginBottom: '4px' }}>{title}</h4>
             <table style={{ borderCollapse: 'collapse', direction: 'ltr' }}>
-                <tbody>
-                    <tr>
-                        <td rowSpan="6" style={headerCellStyle}><span>Severity</span></td>
-                    </tr>
-                    {Array.from({ length: 5 }, (_, i) => 5 - i).map(sev => (
-                        <tr key={sev}>
-                            <td style={labelCellStyle}>{severityLabels[sev]}</td>
-                            {Array.from({ length: 5 }, (_, j) => j + 1).map(lik => {
-                                const isHighlighted = lik === likelihood && sev === severity;
-                                return (
-                                    <td key={lik} style={{ ...cellStyle, backgroundColor: getCellColor(lik * sev) }}>
-                                        {isHighlighted ? 'X' : ''}
-                                    </td>
-                                );
-                            })}
+                    <tbody>
+                        <tr>
+                            <td rowSpan="6" style={headerCellStyle}><span>Severity</span></td>
                         </tr>
-                    ))}
-                    <tr>
-                        <td style={{border: 'none'}}></td>
-                        {Array.from({ length: 5 }, (_, i) => i + 1).map(lik => (
-                            <td key={lik} style={{...labelCellStyle, transform: 'rotate(-45deg)', height: '50px', border: 'none' }}>{likelihoodLabels[lik]}</td>
+                        {Array.from({ length: 5 }, (_, i) => 5 - i).map(sev => (
+                            <tr key={sev}>
+                                <td style={labelCellStyle}>{severityLabels[sev]}</td>
+                                {Array.from({ length: 5 }, (_, j) => j + 1).map(lik => {
+                                    const isHighlighted = lik === likelihood && sev === severity;
+                                    return (
+                                        <td key={lik} style={{ ...cellStyle, backgroundColor: getCellColor(lik * sev) }}>
+                                            {isHighlighted ? 'X' : ''}
+                                        </td>
+                                    );
+                                })}
+                            </tr>
                         ))}
-                    </tr>
-                     <tr>
-                         <td colSpan="7" style={{ fontWeight: 'bold', textAlign: 'center', fontSize: '10pt', paddingTop: '4px', border: 'none' }}>Likelihood</td>
-                    </tr>
-                </tbody>
-            </table>
+                        <tr>
+                            <td style={{border: 'none'}}></td>
+                            {Array.from({ length: 5 }, (_, i) => i + 1).map(lik => (
+                                <td key={lik} style={{...labelCellStyle, transform: 'rotate(-45deg)', height: '50px', border: 'none' }}>{likelihoodLabels[lik]}</td>
+                            ))}
+                        </tr>
+                         <tr>
+                             <td colSpan="7" style={{ fontWeight: 'bold', textAlign: 'center', fontSize: '10pt', paddingTop: '4px', border: 'none' }}>Likelihood</td>
+                        </tr>
+                    </tbody>
+                </table>
         </div>
     );
 };
@@ -120,8 +120,31 @@ const PrintableDocument = ({ data, allTasks }) => {
 
     return (
         <div style={styles.page}>
+            <style>{`@media print {
+                * { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
+                img { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
+                /* ensure backgrounds and borders are preserved where possible */
+                html, body { background: white !important; }
+            }`}</style>
+                <style>{`@media print {
+                    * { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
+                    img { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
+                    /* ensure backgrounds and borders are preserved where possible */
+                    html, body { background: white !important; }
+                }
+                /* Risk matrix: force exact colours and fixed layout for print */
+                .risk-matrix-table, .risk-matrix-table td, .risk-matrix-table th {
+                    -webkit-print-color-adjust: exact !important;
+                    color-adjust: exact !important;
+                    background-clip: padding-box !important;
+                }
+                .risk-matrix-table { table-layout: fixed; border-collapse: collapse; }
+                .risk-matrix-table td { width: 25px !important; height: 25px !important; padding: 0 !important; }
+                .risk-matrix-table .label-rotated { transform: rotate(-45deg); height: 50px !important; padding: 0 4px !important; white-space: nowrap; }
+                .risk-matrix-table td.risk-cell { text-align: center; vertical-align: middle; }
+                `}</style>
             <div style={styles.pageHeader}>
-                <img src={uctelLogo} alt="UCtel Logo" style={{ height: '12mm' }} />
+                <img src={uctelLogo} alt="UCtel Logo" style={{ height: '12mm', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }} />
                 <div style={styles.headerLine}></div>
             </div>
             
