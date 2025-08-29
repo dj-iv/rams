@@ -13,7 +13,8 @@ const RiskMatrix = ({ title, likelihood, severity }) => {
     };
     
     const cellStyle = { border: '1px solid #ccc', width: '25px', height: '25px', textAlign: 'center', verticalAlign: 'middle', position: 'relative', fontSize: '10pt', color: 'white', fontWeight: 'bold' };
-    const headerCellStyle = { fontWeight: 'bold', fontSize: '8pt', writingMode: 'vertical-rl', transform: 'rotate(180deg)', textAlign: 'center', padding: '0 2px' };
+    // Keep the header vertical but don't rotate 180deg (it was rendering upside-down in exports)
+    const headerCellStyle = { fontWeight: 'bold', fontSize: '8pt', writingMode: 'vertical-rl', textAlign: 'center', padding: '0 2px' };
     const labelCellStyle = { fontWeight: 'bold', fontSize: '8pt', padding: '0 4px', textAlign: 'right' };
 
     return (
