@@ -1,5 +1,7 @@
 const chromium = require('chrome-aws-lambda');
 let puppeteer = require('puppeteer-core');
+// Use node-fetch for server-side HTTP calls (pdflayer)
+const fetch = require('node-fetch');
 // We'll decide whether to require full puppeteer after checking chrome-aws-lambda's executablePath
 
 module.exports = async (req, res) => {
@@ -12,6 +14,109 @@ module.exports = async (req, res) => {
     const { html } = req.body;
     if (!html) return res.status(400).send('Missing html');
 
+    // If PDFLAYER_KEY is provided, try pdflayer (apilayer) first with retries
+    if (process.env.PDFLAYER_KEY) {
+      console.log('PDFLAYER_KEY detected; attempting pdflayer conversion');
+      const pdflayerUrl = 'https://api.pdflayer.com/api/convert';
+      const key = process.env.PDFLAYER_KEY;
+
+      const FormData = require('form-data');
+      const tryPdflayer = async () => {
+        // prefer x-www-form-urlencoded
+        const urlParams = new URLSearchParams();
+        urlParams.append('access_key', key);
+        urlParams.append('document_html', html);
+        urlParams.append('page_size', 'A4');
+        urlParams.append('orientation', 'portrait');
+        urlParams.append('render_background', 'true');
+        urlParams.append('render_delay', '250');
+
+        const maxAttempts = 4;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          try {
+            // Use form-encoded on the first attempt, then try multipart form-data on subsequent attempts
+            let resp;
+            if (attempt === 1) {
+              resp = await fetch(pdflayerUrl, { method: 'POST', body: urlParams });
+            } else {
+              const form = new FormData();
+              form.append('access_key', key);
+              form.append('document_html', html);
+              form.append('page_size', 'A4');
+              form.append('orientation', 'portrait');
+              form.append('render_background', 'true');
+              form.append('render_delay', '250');
+              resp = await fetch(pdflayerUrl, { method: 'POST', body: form, headers: form.getHeaders ? form.getHeaders() : {} });
+            }
+
+            const ctype = (resp.headers.get('content-type') || '').toLowerCase();
+            // Read body as Buffer once to avoid double-read errors
+            const buf = await resp.buffer();
+            // If service returned HTML/XML/JSON, treat as non-PDF reply
+            if (ctype.includes('application/json') || ctype.includes('text/xml') || ctype.includes('text/html')) {
+              const txt = buf.toString('utf8');
+              console.warn(`pdflayer returned non-PDF (status ${resp.status}) on attempt ${attempt}:`, txt.slice(0, 1024));
+              // If 503, treat as immediate failure and break to fallback
+              if (resp.status === 503) return { ok: false, status: resp.status, body: txt };
+              if (resp.status >= 500 && attempt < maxAttempts) {
+                const jitter = Math.floor(Math.random() * 300);
+                await new Promise(r => setTimeout(r, 500 * attempt + jitter));
+                continue;
+              }
+              return { ok: false, status: resp.status, body: txt };
+            }
+
+            if (!resp.ok) {
+              const txt = buf.toString('utf8');
+              console.warn(`pdflayer returned status ${resp.status} on attempt ${attempt}:`, txt.slice(0, 1024));
+              if (resp.status >= 500 && attempt < maxAttempts) {
+                const jitter = Math.floor(Math.random() * 300);
+                await new Promise(r => setTimeout(r, 500 * attempt + jitter));
+                continue;
+              }
+              return { ok: false, status: resp.status, body: txt };
+            }
+
+            // Successful PDF response
+            return { ok: true, buffer: Buffer.from(buf) };
+          } catch (e) {
+            console.warn(`pdflayer attempt ${attempt} failed:`, e && e.message ? e.message : e);
+            if (attempt < maxAttempts) {
+              const jitter = Math.floor(Math.random() * 300);
+              await new Promise(r => setTimeout(r, 500 * attempt + jitter));
+              continue;
+            }
+            return { ok: false, status: 502, body: String(e) };
+          }
+        }
+        return { ok: false, status: 502, body: 'pdflayer unknown error' };
+      };
+
+      try {
+        const result = await tryPdflayer();
+        if (result.ok) {
+          res.setHeader('Content-Type', 'application/pdf');
+          res.setHeader('Content-Disposition', 'attachment; filename="rams-document.pdf"');
+          return res.status(200).send(result.buffer);
+        }
+
+        // Log pdflayer failure details then continue to Puppeteer fallback
+        console.warn('pdflayer failed:', result.status, result.body);
+        // If pdflayer returned a JSON error body, forward it for easier debugging
+        if (result.body && typeof result.body === 'string' && result.body.trim().startsWith('{')) {
+          try {
+            const parsed = JSON.parse(result.body);
+            console.warn('pdflayer error JSON:', parsed);
+          } catch (e) {
+            // ignore parse error
+          }
+        }
+        // fall through to Puppeteer path
+      } catch (e) {
+        console.error('pdflayer conversion unexpected error', e && e.stack ? e.stack : e);
+      }
+    }
+
   // Determine executable path and launch options
   let launchOptions = { args: [], defaultViewport: chromium.defaultViewport || null, headless: true };
 
@@ -21,7 +126,15 @@ module.exports = async (req, res) => {
   try {
     if (isServerless) {
       try {
-        execPath = typeof chromium.executablePath === 'function' ? await chromium.executablePath() : chromium.executablePath;
+        // chrome-aws-lambda.executablePath can be a function, a Promise, or a string depending on version.
+        if (typeof chromium.executablePath === 'function') {
+          execPath = await chromium.executablePath();
+        } else if (chromium.executablePath && typeof chromium.executablePath.then === 'function') {
+          // it's a Promise-like object
+          execPath = await chromium.executablePath;
+        } else {
+          execPath = chromium.executablePath;
+        }
         console.log('Detected serverless environment; using chrome-aws-lambda executablePath:', execPath);
       } catch (e) {
         console.warn('chrome-aws-lambda executablePath() failed in serverless env:', e && e.message ? e.message : e);
