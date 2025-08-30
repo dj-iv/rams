@@ -198,6 +198,11 @@ module.exports = async (req, res) => {
     try {
       const fs = require('fs');
       console.log('Launching browser with options', { hasExecPath: !!launchOptions.executablePath, launchExecPath: launchOptions.executablePath, launchType: typeof puppeteer.launch });
+      if (!launchOptions.executablePath) {
+        const advice = 'No Chromium execPath found on server. Either set a working PDF provider (set PDFLAYER_KEY) or ensure chrome-aws-lambda can provide a binary on this platform.';
+        console.error(advice);
+        return res.status(502).send(`Server PDF generation failed: ${advice}`);
+      }
       if (launchOptions.executablePath) console.log('Launch execPath exists?', fs.existsSync(launchOptions.executablePath));
       const browser = await puppeteer.launch(launchOptions);
 
