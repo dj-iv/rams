@@ -142,8 +142,8 @@ const PrintableDocument = ({ data, allTasks }) => {
                         <tr>
                             <th style={tableHeaderStyle}>Name</th>
                             <th style={tableHeaderStyle}>Role</th>
-                            <th style={tableHeaderStyle}>Phone</th>
-                            <th style={tableHeaderStyle}>Competencies</th>
+                            <th style={tableHeaderStyle}>Competencies</th>  {/* Swapped: Competencies now before Phone */}
+                            <th style={tableHeaderStyle}>Phone</th>       {/* Swapped: Phone now after Competencies */}
                         </tr>
                     </thead>
                     <tbody>
@@ -151,8 +151,8 @@ const PrintableDocument = ({ data, allTasks }) => {
                             <tr key={member.id}>
                                 <td style={cellStyle}>{member.name}</td>
                                 <td style={cellStyle}>{member.role}</td>
-                                <td style={cellStyle}>{member.phone}</td>
-                                <td style={cellStyle}>{member.competencies}</td>
+                                <td style={cellStyle}>{member.competencies}</td>  {/* Swapped: Competencies now before Phone */}
+                                <td style={cellStyle}>{member.phone}</td>         {/* Swapped: Phone now after Competencies */}
                             </tr>
                         ))}
                     </tbody>
