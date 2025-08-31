@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import uctelLogo from './assets/uctel-logo.png';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { db } from './firebase'; 
@@ -11,6 +12,7 @@ import Step5 from './components/steps/Step5';
 import Step6 from './components/steps/Step6';
 import Step7 from './components/steps/Step7';
 import PrintableDocument from './components/PrintableDocument';
+import PreviewModal from './components/PreviewModal'; // Ensure this import is present
 
 const buildInitialTasks = (allTasks, template, templates) => {
   if (!template || !templates[template]) {
@@ -280,9 +282,9 @@ const Step3 = ({ data, allTasks, allTemplates, handlers, showNewTemplateForm, sh
     );
 };
 
-export default function App() {
+// Main App component (renamed to AppContent to avoid conflicts)
+const AppContent = () => {
   const [formData, setFormData] = useState(null);
-  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [dbPpe, setDbPpe] = useState([]);
   const [dbTools, setDbTools] = useState([]);
   const [dbMaterials, setDbMaterials] = useState([]);
@@ -295,11 +297,11 @@ export default function App() {
   const [showNewTaskForm, setShowNewTaskForm] = useState(false);
   const [showNewTemplateForm, setShowNewTemplateForm] = useState(false);
   const [step, setStep] = useState(1);
-  const [showPreview, setShowPreview] = useState(false);
   const previewRef = useRef(null);
   const [addingHazardTo, setAddingHazardTo] = useState(null); // State to track which risk category is getting a new hazard
   const [showNewRiskCategoryForm, setShowNewRiskCategoryForm] = useState(false);
-
+  const [showPreview, setShowPreview] = useState(false); // Add state for modal visibility
+  const navigate = useNavigate();
 
 useEffect(() => {
      // This effect now runs once the initial data fetch is complete, even if some collections are empty.
@@ -833,16 +835,20 @@ useEffect(() => {
         />;
       case 6: return <Step6 data={formData} handlers={{ handleSelectableListToggle, handleAddCustomSafetyItem: addCustomItem, handleCustomItemChange, removeCustomItem }} />;
      
-      case 7: return <Step7 previewHandler={() => setShowPreview(true)} />;
+      case 7: return <Step7 previewHandler={handlePreview} />;
       default: return <Step1 data={formData} handler={handleInputChange} />;
     }
   };
 
   const progressLabels = ["Project", "Team", "Method", "Risks", "Safety", "Equipment", "Generate"];
 
+  const handlePreview = () => {
+    setShowPreview(true); // Open the modal
+  };
+
   return (
     <>
-      <div className="bg-slate-100 font-sans text-slate-800 min-h-screen" style={{'--uctel-orange': '#d88e43', '--uctel-teal': '#008080', '--uctel-blue': '#2c4f6b'}}>
+      <div className="main-content bg-slate-100 font-sans text-slate-800 min-h-screen" style={{'--uctel-orange': '#d88e43', '--uctel-teal': '#008080', '--uctel-blue': '#2c4f6b'}}>
         <div className="container mx-auto p-4 md:p-8">
           <header className="text-center mb-8 flex flex-col items-center">
              <img src={uctelLogo} alt="UCtel Logo" className="h-12 mb-4" />
@@ -874,110 +880,31 @@ useEffect(() => {
               {step < TOTAL_STEPS ? (
                 <button onClick={nextStep} className="bg-[var(--uctel-blue)] text-white font-semibold py-2 px-6 rounded-lg hover:bg-opacity-90 transition-colors">Next Step &rarr;</button>
               ) : (
-                <button onClick={() => setShowPreview(true)} className="bg-[var(--uctel-teal)] text-white font-semibold py-2 px-6 rounded-lg hover:bg-opacity-90 transition-colors">Preview Document</button>
+                <button onClick={handlePreview} className="bg-[var(--uctel-teal)] text-white font-semibold py-2 px-6 rounded-lg hover:bg-opacity-90 transition-colors">Preview Document</button>
               )}
             </div>
           </div>
         </div>
       </div>
-      
-      {showPreview && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-start p-4 md:p-8 overflow-y-auto z-50" onClick={() => setShowPreview(false)}>
-        <div className="relative" onClick={(e) => e.stopPropagation()} ref={previewRef}>
-           <button onClick={() => setShowPreview(false)} className="absolute -top-4 -right-4 bg-white rounded-full p-2 shadow-lg hover:bg-slate-200 z-10">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-           </button>
-                   <button disabled={isGeneratingPdf} onClick={() => {
-            // Open a new window and print its contents. This preserves CSS and page-breaks.
-            const element = previewRef.current?.querySelector('[style*="width: 210mm"]') || previewRef.current;
-            if (!element) return;
-            const html = `<!doctype html><html><head><meta charset="utf-8"><title>RAMS Document</title>` +
-              // copy CSS from current document
-              Array.from(document.querySelectorAll('link[rel="stylesheet"], style')).map(node => node.outerHTML).join('') +
-              `</head><body>${element.outerHTML}</body></html>`;
-
-            const printWindow = window.open('', '_blank', 'noopener,noreferrer');
-            if (!printWindow) {
-              alert('Popup blocked. Please allow popups for this site to use Print-to-PDF.');
-              return;
-            }
-            printWindow.document.open();
-            printWindow.document.write(html);
-            printWindow.document.close();
-            // Give the new window some time to load resources
-            setTimeout(() => {
-              printWindow.focus();
-              printWindow.print();
-              setIsGeneratingPdf(false);
-            }, 500);
-            setIsGeneratingPdf(true);
-           }} className="absolute -top-4 -right-20 bg-white rounded-full p-2 shadow-lg hover:bg-slate-200 z-10" title="Print / Save as PDF">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17H7V7h10v10zm0 0v4H7v-4"/></svg>
-           </button>
-                  <button disabled={isGeneratingPdf} onClick={async () => {
-            const element = previewRef.current?.querySelector('[style*="width: 210mm"]') || previewRef.current;
-            if (!element) return;
-            const html = `<!doctype html><html><head><meta charset="utf-8"><title>RAMS Document</title>` +
-              Array.from(document.querySelectorAll('link[rel="stylesheet"], style')).map(node => node.outerHTML).join('') +
-              `</head><body>${element.outerHTML}</body></html>`;
-
-            try {
-              setIsGeneratingPdf(true);
-              const resp = await fetch('/api/generate-pdf', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ html })
-              });
-              const contentType = resp.headers.get('content-type') || '';
-              if (!resp.ok) {
-                const text = await resp.text().catch(() => null);
-                console.error('Server PDF generation error response:', resp.status, text);
-                throw new Error(text || 'Failed to generate PDF');
-              }
-              if (contentType.includes('text/html')) {
-                // server returned a print fallback HTML page
-                const html = await resp.text();
-                const w = window.open('', '_blank');
-                if (!w) return alert('Popup blocked. Please allow popups to use the print fallback.');
-                w.document.open();
-                w.document.write(html);
-                w.document.close();
-                setIsGeneratingPdf(false);
-                return;
-              }
-              const blob = await resp.blob();
-              const url = window.URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = 'rams-document.pdf';
-              document.body.appendChild(a);
-              a.click();
-              a.remove();
-              window.URL.revokeObjectURL(url);
-            } catch (err) {
-              console.error(err);
-              const message = (err && err.message) ? err.message : 'Server PDF generation failed';
-              alert('Server PDF generation failed: ' + message);
-            } finally {
-              setIsGeneratingPdf(false);
-            }
-          }} className="absolute -top-4 -right-40 bg-white rounded-full p-2 shadow-lg hover:bg-slate-200 z-10" title="Generate PDF (server)">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M12 12v8m0-8l-4 4m4-4l4 4M12 4v4"/></svg>
-          </button>
-                  {isGeneratingPdf && (
-                      <div className="absolute -top-4 -right-56 bg-white rounded-full p-2 shadow-lg z-10 flex items-center justify-center" title="Generating PDF">
-                          <svg className="animate-spin h-5 w-5 text-[var(--uctel-blue)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                          </svg>
-                      </div>
-                  )}
-          <PrintableDocument data={formData} allTasks={allTasks}/>
-        </div>
-          </div>
-      )}
-     
-     
+      {/* Render the modal outside the main layout */}
+      <PreviewModal 
+        isOpen={showPreview} 
+        onClose={() => setShowPreview(false)} 
+        data={formData} 
+        allTasks={allTasks} 
+      />
     </>
   );
-}
+};
+
+const App = () => (
+  <Router>
+    <Routes>
+      <Route path="/" element={<AppContent />} />
+      {/* The /preview route is no longer needed */}
+      {/* <Route path="/preview" element={<PreviewPage />} /> */}
+    </Routes>
+  </Router>
+);
+
+export default App;

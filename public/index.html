@@ -25,7 +25,22 @@
       work correctly both with client-side routing and a non-root public URL.
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
-    <title>React App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Lato:400,700&display=swap" rel="stylesheet" />
+    <style>
+      :root { --page-width:210mm; --page-padding:25mm; --brand-blue:#385A7C; --brand-teal:#1A8387; }
+      .rams-page { width:var(--page-width); margin:0 auto 20mm auto; background:#fff; padding:var(--page-padding); box-sizing:border-box; }
+      @media screen {.rams-page{box-shadow:0 0 10px rgba(0,0,0,.08);} }
+      @media print {
+        @page { size:A4; margin:0; }
+        body,html { background:#fff !important; }
+        /* Allow natural pagination instead of forcing each .rams-page onto its own printed page */
+        .rams-page { page-break-after:auto; box-shadow:none !important; }
+        .rams-page:last-child { page-break-after:auto; margin-bottom:0; }
+      }
+    </style>
+    <title>RAMS Generator</title>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

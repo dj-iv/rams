@@ -1,0 +1,184 @@
+:root {
+    --color-primary-blue: #385A7C;
+    --color-secondary-teal: #1A8387;
+    --color-accent-orange: #D98236;
+    --color-neutral-beige: #EAE1D9;
+    --color-light-background: #fbf9f7;
+    --color-text-dark: #444;
+    --color-text-light: #ffffff;
+}
+
+@media print {
+    @page {
+        size: A4;
+        margin: 0;
+    }
+
+    html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+    }
+
+    body {
+        font-family: 'Lato', Arial, sans-serif !important;
+        font-size: 11pt !important;
+        line-height: 1.6 !important;
+        color: var(--color-text-dark) !important;
+    }
+    
+    /* Hide the preview header when printing */
+    .preview-header {
+        display: none !important;
+    }
+
+    .print-preview {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Hide all non-printable content */
+    .print\:hidden,
+    .print-hidden,
+    .bg-gray-100,
+    button:not([type="submit"]) {
+        display: none !important;
+    }
+
+    /* Show only the printable document */
+    .printable-document { width: var(--page-width) !important; margin:0 auto !important; }
+
+    /* Typography */
+    h1, h2, h3, h4 {
+        font-family: 'Montserrat', Arial, sans-serif !important;
+        color: var(--color-primary-blue) !important;
+        line-height: 1.3 !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+    }
+
+    h1 { 
+        font-size: 26pt !important;
+        text-align: center !important;
+        margin-top: 50px !important;
+    }
+
+    h2 {
+        font-size: 20pt !important;
+        text-align: left !important;
+        border-bottom: 3px solid var(--color-secondary-teal) !important;
+        padding-bottom: 10px !important;
+        margin-top: 40px !important;
+        margin-bottom: 25px !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    h3 {
+        font-size: 16pt !important;
+        margin-top: 35px !important;
+        margin-bottom: 15px !important;
+    }
+
+    /* Content */
+    p, li {
+        margin-bottom: 1.2em !important;
+        text-align: justify !important;
+        hyphens: auto !important;
+        widows: 2 !important;
+        orphans: 2 !important;
+    }
+
+    /* Tables */
+    table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin: 25px 0 !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    th, td {
+        padding: 12px 15px !important;
+        text-align: left !important;
+        border-bottom: 1px solid #e0e0e0 !important;
+    }
+
+    th {
+        background-color: var(--color-primary-blue) !important;
+        color: white !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Preview modal fixes */
+    .fixed { position: static !important; }
+    .inset-0 { position: static !important; }
+    .flex-col { display: block !important; }
+    .z-50 { z-index: auto !important; }
+
+    /* Images */
+    img {
+        max-width: 100% !important;
+        height: auto !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    /* Logo-specific print rules: shrink and avoid splitting header */
+    .rams-logo {
+        max-width: 120mm !important; /* reduce extremely large logos */
+        height: auto !important;
+        display: block !important;
+        margin: 0 0 6mm 0 !important;
+    }
+
+    /* Keep header and first content block together when possible */
+    .printable-document header { display: block; page-break-after: avoid; break-after: avoid; }
+    .printable-document header + main { page-break-before: avoid; break-before: avoid; }
+
+    /* Colors and Backgrounds */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .print\:bg-white {
+        background-color: white !important;
+    }
+
+    /* Remove UI elements */
+    .print\:hidden,
+    .bg-gray-100,
+    nav,
+    button,
+    .preview-controls {
+        display: none !important;
+    }
+
+    /* Ensure content is visible */
+    .print\:overflow-visible {
+        overflow: visible !important;
+    }
+
+    .print\:p-0 {
+        padding: 0 !important;
+    }
+
+    /* Remove vertical padding wrapper around pages so print matches preview */
+    .py-8 { 
+        padding-top: 0 !important; 
+        padding-bottom: 0 !important; 
+    }
+
+    /* Hide preview header bar explicitly (added print-hidden class in component) */
+    .print-hidden { display: none !important; }
+
+    /* Extra polish */
+    .printable-document h1, .printable-document h2 { letter-spacing: .5px !important; }
+    .printable-document p { font-size: 10.5pt !important; }
+    .printable-document ul { margin-top: 0 !important; }
+    .printable-document li { margin: 0 0 .6em 0 !important; }
+    .printable-document .risk-assessment-container { page-break-inside: avoid !important; }
+    .preview-toolbar { display: none !important; }
+}

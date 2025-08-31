@@ -1,8 +1,19 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
+import './print.css';
 import App from './App';
+import PrintView from './components/PrintView';
 import reportWebVitals from './reportWebVitals';
+
+// Expose print view renderer for the print window
+window.renderPrintView = (data, allTasks) => {
+  ReactDOM.createRoot(document.getElementById('print-root')).render(
+    <React.StrictMode>
+      <PrintView data={data} allTasks={allTasks} />
+    </React.StrictMode>
+  );
+};
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

@@ -1,238 +1,240 @@
-const chromium = require('chrome-aws-lambda');
-let puppeteer = require('puppeteer-core');
-// Use node-fetch for server-side HTTP calls (pdflayer)
+// Use node-fetch for server-side HTTP calls
 const fetch = require('node-fetch');
-// We'll decide whether to require full puppeteer after checking chrome-aws-lambda's executablePath
 
 module.exports = async (req, res) => {
+  // 1. Only allow POST requests
   if (req.method !== 'POST') {
-    res.status(405).send('Method Not Allowed');
-    return;
+    return res.status(405).send('Method Not Allowed');
+  }
+
+  // 2. Check for the API key in environment variables
+  const apiKey = process.env.PDFLAYER_KEY;
+  if (!apiKey) {
+    console.error('Server Error: PDFLAYER_KEY is not set in environment variables.');
+    return res.status(500).send('Server configuration error: PDF provider key is missing.');
   }
 
   try {
-    const { html } = req.body;
-    if (!html) return res.status(400).send('Missing html');
+    // 3. Get the HTML from the request body
+    let { html } = req.body;
+    if (!html) {
+      return res.status(400).send('Bad Request: Missing HTML content in request body.');
+    }
 
-    // If PDFLAYER_KEY is provided, try pdflayer (apilayer) first with retries
-    if (process.env.PDFLAYER_KEY) {
-      console.log('PDFLAYER_KEY detected; attempting pdflayer conversion');
-      const pdflayerUrl = 'https://api.pdflayer.com/api/convert';
-      const key = process.env.PDFLAYER_KEY;
+    // 3a. Inline local images (from /public) so the remote pdflayer renderer can access them
+    // This converts <img src="/path/to/file.png"> to data: URIs where possible.
+    const fs = require('fs');
+    const path = require('path');
+    html = html.replace(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi, (match, src) => {
+      try {
+        if (!src || src.startsWith('data:') || src.match(/^https?:\/\//i)) return match;
+        const rel = src.replace(/^\//, '');
 
-      const FormData = require('form-data');
-      const tryPdflayer = async () => {
-        // prefer x-www-form-urlencoded
-        const urlParams = new URLSearchParams();
-        urlParams.append('access_key', key);
-        urlParams.append('document_html', html);
-        urlParams.append('page_size', 'A4');
-        urlParams.append('orientation', 'portrait');
-        urlParams.append('render_background', 'true');
-        urlParams.append('render_delay', '250');
+        // Candidate locations to check for the image file
+        const candidates = [];
+        // direct path under public
+        candidates.push(path.join(process.cwd(), 'public', rel));
+        // direct path as provided (relative to project)
+        candidates.push(path.join(process.cwd(), rel));
+        // webpack/static media paths (build output)
+        candidates.push(path.join(process.cwd(), 'build', rel));
+        candidates.push(path.join(process.cwd(), 'build', 'static', 'media', path.basename(rel)));
+        // src assets folder fallback (search by basename)
+        candidates.push(path.join(process.cwd(), 'src', 'assets', path.basename(rel)));
 
-        const maxAttempts = 4;
-        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-          try {
-            // Use form-encoded on the first attempt, then try multipart form-data on subsequent attempts
-            let resp;
-            if (attempt === 1) {
-              resp = await fetch(pdflayerUrl, { method: 'POST', body: urlParams });
-            } else {
-              const form = new FormData();
-              form.append('access_key', key);
-              form.append('document_html', html);
-              form.append('page_size', 'A4');
-              form.append('orientation', 'portrait');
-              form.append('render_background', 'true');
-              form.append('render_delay', '250');
-              resp = await fetch(pdflayerUrl, { method: 'POST', body: form, headers: form.getHeaders ? form.getHeaders() : {} });
-            }
-
-            const ctype = (resp.headers.get('content-type') || '').toLowerCase();
-            // Read body as Buffer once to avoid double-read errors
-            const buf = await resp.buffer();
-            // If service returned HTML/XML/JSON, treat as non-PDF reply
-            if (ctype.includes('application/json') || ctype.includes('text/xml') || ctype.includes('text/html')) {
-              const txt = buf.toString('utf8');
-              console.warn(`pdflayer returned non-PDF (status ${resp.status}) on attempt ${attempt}:`, txt.slice(0, 1024));
-              // If 503, treat as immediate failure and break to fallback
-              if (resp.status === 503) return { ok: false, status: resp.status, body: txt };
-              if (resp.status >= 500 && attempt < maxAttempts) {
-                const jitter = Math.floor(Math.random() * 300);
-                await new Promise(r => setTimeout(r, 500 * attempt + jitter));
-                continue;
+        // If none of the above exist, try a small repo scan for the basename
+        const basename = path.basename(rel);
+        if (!candidates.some(p => fs.existsSync(p))) {
+          // search common folders
+          const possiblePaths = [
+            path.join(process.cwd(), 'src'),
+            path.join(process.cwd(), 'public'),
+            path.join(process.cwd(), 'build')
+          ];
+          for (const root of possiblePaths) {
+            try {
+              const stack = [root];
+              while (stack.length) {
+                const cur = stack.pop();
+                const entries = fs.readdirSync(cur, { withFileTypes: true });
+                for (const e of entries) {
+                  const full = path.join(cur, e.name);
+                  if (e.isDirectory()) stack.push(full);
+                  else if (e.isFile() && e.name === basename) {
+                    candidates.push(full);
+                    // stop scanning this root once found
+                    stack.length = 0;
+                    break;
+                  }
+                }
               }
-              return { ok: false, status: resp.status, body: txt };
+            } catch (err) {
+              // ignore permission / missing directories
             }
-
-            if (!resp.ok) {
-              const txt = buf.toString('utf8');
-              console.warn(`pdflayer returned status ${resp.status} on attempt ${attempt}:`, txt.slice(0, 1024));
-              if (resp.status >= 500 && attempt < maxAttempts) {
-                const jitter = Math.floor(Math.random() * 300);
-                await new Promise(r => setTimeout(r, 500 * attempt + jitter));
-                continue;
-              }
-              return { ok: false, status: resp.status, body: txt };
-            }
-
-            // Successful PDF response
-            return { ok: true, buffer: Buffer.from(buf) };
-          } catch (e) {
-            console.warn(`pdflayer attempt ${attempt} failed:`, e && e.message ? e.message : e);
-            if (attempt < maxAttempts) {
-              const jitter = Math.floor(Math.random() * 300);
-              await new Promise(r => setTimeout(r, 500 * attempt + jitter));
-              continue;
-            }
-            return { ok: false, status: 502, body: String(e) };
           }
         }
-        return { ok: false, status: 502, body: 'pdflayer unknown error' };
-      };
 
-      try {
-        const result = await tryPdflayer();
-        if (result.ok) {
-          res.setHeader('Content-Type', 'application/pdf');
-          res.setHeader('Content-Disposition', 'attachment; filename="rams-document.pdf"');
-          return res.status(200).send(result.buffer);
+        const found = candidates.find(p => p && fs.existsSync(p));
+        if (found) {
+          const buf = fs.readFileSync(found);
+          const ext = path.extname(found).toLowerCase().replace('.', '');
+          const mime = ext === 'svg' ? 'image/svg+xml' : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : ext === 'png' ? 'image/png' : 'application/octet-stream';
+          const data = `data:${mime};base64,${buf.toString('base64')}`;
+          return match.replace(src, data);
         }
-
-        // Log pdflayer failure details then continue to Puppeteer fallback
-        console.warn('pdflayer failed:', result.status, result.body);
-        // If pdflayer returned a JSON error body, forward it for easier debugging
-        if (result.body && typeof result.body === 'string' && result.body.trim().startsWith('{')) {
-          try {
-            const parsed = JSON.parse(result.body);
-            console.warn('pdflayer error JSON:', parsed);
-          } catch (e) {
-            // ignore parse error
-          }
-        }
-        // fall through to Puppeteer path
+        return match;
       } catch (e) {
-        console.error('pdflayer conversion unexpected error', e && e.stack ? e.stack : e);
+        console.warn('Failed to inline image', src, e && e.message ? e.message : e);
+        return match;
       }
-    }
+    });
 
-  // Determine executable path and launch options
-  let launchOptions = { args: [], defaultViewport: chromium.defaultViewport || null, headless: true };
-
-  // Prefer the chrome-aws-lambda executable when running on serverless environments
-  const isServerless = !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NODE_ENV === 'production';
-  let execPath = null;
-  try {
-    if (isServerless) {
-      try {
-        // chrome-aws-lambda.executablePath can be a function, a Promise, or a string depending on version.
-        if (typeof chromium.executablePath === 'function') {
-          execPath = await chromium.executablePath();
-        } else if (chromium.executablePath && typeof chromium.executablePath.then === 'function') {
-          // it's a Promise-like object
-          execPath = await chromium.executablePath;
-        } else {
-          execPath = chromium.executablePath;
-        }
-        console.log('Detected serverless environment; using chrome-aws-lambda executablePath:', execPath);
-      } catch (e) {
-        console.warn('chrome-aws-lambda executablePath() failed in serverless env:', e && e.message ? e.message : e);
-      }
-    }
-
-    // If CHROME_PATH is explicitly provided, prefer it (useful for custom deploys)
-    if (!execPath && process.env.CHROME_PATH) {
-      execPath = process.env.CHROME_PATH;
-      console.log('Using CHROME_PATH env:', execPath);
-    }
-
-    // If still not found and we're running locally, try to use full puppeteer (dev)
-    if (!execPath && !isServerless) {
-      try {
-        // eslint-disable-next-line global-require
-        const full = require('puppeteer');
-        if (full && typeof full.executablePath === 'function') {
-          try {
-            const pExec = full.executablePath();
-            if (pExec) execPath = pExec;
-            console.log('Using local puppeteer executablePath:', pExec);
-          } catch (e) {
-            console.warn('puppeteer.executablePath() failed:', e && e.message ? e.message : e);
-          }
-        }
-      } catch (e) {
-        // full puppeteer not installed locally — fine, we'll use puppeteer-core and hope chrome-aws-lambda provides an execPath
-      }
-    }
-  } catch (e) {
-    console.warn('Executable detection failed:', e && e.message ? e.message : e);
-  }
-    // Diagnostic info
+    // If the project provides local fonts under public/fonts, embed them as data: URIs so pdflayer renders deterministically
+    let embeddedFontCss = '';
     try {
-      const fs = require('fs');
-      const puppeteerPkg = puppeteer && puppeteer._preferredRevision ? { preferredRevision: puppeteer._preferredRevision } : {};
-      console.log('PDF generator diagnostics:', {
-        puppeteerType: puppeteer && puppeteer.launch ? 'full' : 'core',
-        puppeteerVersion: (puppeteer && puppeteer.version) ? puppeteer.version() : undefined,
-        puppeteerPreferredRevision: puppeteerPkg.preferredRevision,
-        chromeAwsExecutable: execPath,
-        chromeEnvPath: process.env.CHROME_PATH,
-        puppeteerSkipDownload: process.env.PUPPETEER_SKIP_DOWNLOAD || null
-      });
-      if (execPath) {
-        console.log('ExecPath exists on FS?', fs.existsSync(execPath));
-      }
-    } catch (diagErr) {
-      console.warn('Diagnostics failed:', diagErr && diagErr.message ? diagErr.message : diagErr);
-    }
-    if (execPath) {
-      launchOptions.executablePath = execPath;
-    }
-
-    // Always prefer chrome-aws-lambda args and headless flag when available
-    launchOptions.args = chromium.args && chromium.args.length ? chromium.args : launchOptions.args;
-    launchOptions.defaultViewport = chromium.defaultViewport || launchOptions.defaultViewport;
-    launchOptions.headless = typeof chromium.headless === 'undefined' ? true : chromium.headless;
-
-    try {
-      const fs = require('fs');
-      console.log('Launching browser with options', { hasExecPath: !!launchOptions.executablePath, launchExecPath: launchOptions.executablePath, launchType: typeof puppeteer.launch });
-      if (!launchOptions.executablePath) {
-        const advice = 'No Chromium execPath found on server. Either set a working PDF provider (set PDFLAYER_KEY) or ensure chrome-aws-lambda can provide a binary on this platform.';
-        console.error(advice);
-        return res.status(502).send(`Server PDF generation failed: ${advice}`);
-      }
-      if (launchOptions.executablePath) console.log('Launch execPath exists?', fs.existsSync(launchOptions.executablePath));
-      const browser = await puppeteer.launch(launchOptions);
-
-      const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'networkidle0' });
-      const pdf = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '15mm', bottom: '15mm', left: '15mm', right: '15mm' }, preferCSSPageSize: true });
-      await browser.close();
-
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'attachment; filename="rams-document.pdf"');
-      return res.status(200).send(pdf);
-    } catch (launchErr) {
-      console.error('Browser launch failed', launchErr && launchErr.stack ? launchErr.stack : launchErr);
-        const detailMsg = (launchErr && launchErr.message) ? launchErr.message : String(launchErr);
-        // If the failure is specifically that PrintToPDF is not implemented (common in some local Chrome builds),
-        // return an HTML fallback that auto-triggers window.print() so the client can Save-as-PDF.
-        if (detailMsg && detailMsg.includes('PrintToPDF')) {
-          const fallbackHtml = `<!doctype html><html><head><meta charset="utf-8"><title>RAMS - Print fallback</title></head><body>${html}<script>window.onload = function(){ setTimeout(function(){ window.print(); }, 250); };</script></body></html>`;
-          res.setHeader('Content-Type', 'text/html');
-          return res.status(200).send(fallbackHtml);
+      const fontDir = path.join(process.cwd(), 'public', 'fonts');
+      if (fs.existsSync(fontDir)) {
+        const fontFiles = fs.readdirSync(fontDir);
+        for (const file of fontFiles) {
+          if (!/\.woff2?$/.test(file)) continue;
+          const full = path.join(fontDir, file);
+          try {
+            const b = fs.readFileSync(full);
+            const ext = path.extname(full).toLowerCase();
+            const mime = ext === '.woff2' ? 'font/woff2' : 'font/woff';
+            // derive a friendly font-family name from filename
+            const family = file.replace(/\.(woff2?|ttf|otf)$/i, '').replace(/[-_]/g, ' ');
+            embeddedFontCss += `@font-face { font-family: '${family}'; src: url(data:${mime};base64,${b.toString('base64')}) format('${ext === '.woff2' ? 'woff2' : 'woff'}'); font-weight: normal; font-style: normal; font-display: swap; }\n`;
+          } catch (e) {
+            // ignore read errors
+          }
         }
-
-        // Provide execPath diagnostic when returning the error to help identify missing chrome binary on Vercel
-        const execInfo = launchOptions && launchOptions.executablePath ? ` (execPath: ${launchOptions.executablePath})` : '';
-        const advice = `TROUBLESHOOTING: https://github.com/puppeteer/puppeteer/blob/main/docs/troubleshooting.md`;
-        return res.status(500).send(`Browser launch failed: ${detailMsg}${execInfo}\n\n${advice}`);
+      }
+    } catch (e) {
+      // ignore embed font errors
     }
+
+    // Wrap the HTML with proper viewport settings and CSS to match preview layout
+    const wrappedHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Load fonts used by preview (fallback to embedded fonts if available) -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Lato:400,700&display=swap" rel="stylesheet">
+  <style>
+  ${embeddedFontCss}
+    @page {
+      size: A4;
+      margin: 15mm;
+    }
+    /* Base styles */
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 11pt;
+      line-height: 1.4;
+      color: #000;
+      background: #fff;
+      margin: 0;
+      padding: 0;
+    }
+    /* Keep existing styles from source elements */
+    * {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    /* Table styles - preserve borders and spacing */
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      page-break-inside: avoid;
+    }
+    td, th {
+      border: 1px solid black;
+      padding: 4px 8px;
+      text-align: left;
+    }
+    /* Headers */
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1em;
+      margin-bottom: 0.5em;
+      page-break-after: avoid;
+    }
+    /* Lists */
+    ul, ol {
+      padding-left: 2em;
+      margin: 0.5em 0;
+    }
+    li {
+      margin: 0.25em 0;
+    }
+    /* Paragraphs */
+    p {
+      margin: 0.5em 0;
+      orphans: 3;
+      widows: 3;
+    }
+    /* Page breaks */
+    .page-break {
+      page-break-before: always;
+    }
+    /* Images */
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+  /* Prevent header/logo splitting from the first content block */
+  .printable-document header { page-break-after: avoid; break-after: avoid; }
+  .printable-document header + main { page-break-before: avoid; break-before: avoid; }
+  /* Keep risk assessment blocks intact */
+  .printable-document .risk-assessment-container { page-break-inside: avoid; break-inside: avoid; }
+  /* Ensure tables and matrices are kept together when possible */
+  .printable-document table { page-break-inside: avoid; break-inside: avoid; }
+  </style>
+</head>
+<body>${html}</body>
+</html>`;
+
+    // 4. Construct the request to the pdflayer API
+    const pdflayerUrl = `https://api.pdflayer.com/api/convert?access_key=${apiKey}`;
+    
+  const response = await fetch(pdflayerUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        document_html: wrappedHtml,
+        page_size: 'A4',
+        orientation: 'portrait',
+    margin_top: '20mm',
+    margin_bottom: '20mm',
+    margin_left: '20mm',
+    margin_right: '20mm',
+    render_background: 'true',
+    render_delay: 5000, // give fonts/images more time to load
+  viewport_width: 2000,
+  viewport_height: 3000,
+        no_images: 0,
+  scale: 2,
+        use_css: 'true',
+        custom_unit: 'mm'
+      })
+    });
+
+    // 5. Handle the response from pdflayer
+    if (!response.ok) {
+        const errorBody = await response.text();
+        console.error('pdflayer API error:', errorBody);
+        return res.status(response.status).send(`PDF generation failed: ${errorBody}`);
+    }
+
+    // 6. If successful, stream the PDF file back to the client
+    const pdfBuffer = await response.buffer();
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="rams-document.pdf"');
+    return res.status(200).send(pdfBuffer);
+
   } catch (err) {
-    console.error('PDF generation failed', err && err.stack ? err.stack : err);
-    const message = (err && err.message) ? `PDF generation failed: ${err.message}` : 'PDF generation failed';
-    res.status(500).send(message);
+    console.error('An unexpected server error occurred:', err);
+    return res.status(500).send('An unexpected error occurred during PDF generation.');
   }
 };
