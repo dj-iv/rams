@@ -45,7 +45,7 @@ const PreviewModal = ({ isOpen, onClose, data, allTasks }) => {
         copyStyles: true
     });
 
-    // New PDFShift function (separate)
+    // PDFShift function (untouched)
     const handleGeneratePdf = async () => {
         if (!printableRef.current) {
             alert('No content to convert.');
@@ -53,7 +53,7 @@ const PreviewModal = ({ isOpen, onClose, data, allTasks }) => {
         }
 
         const apiKey = process.env.REACT_APP_PDFSHIFT_KEY;
-        console.log('PDFShift Key:', apiKey); // Should log your key
+        console.log('PDFShift Key:', apiKey);
         if (!apiKey) {
             alert('Missing REACT_APP_PDFSHIFT_KEY in .env');
             return;
@@ -61,22 +61,15 @@ const PreviewModal = ({ isOpen, onClose, data, allTasks }) => {
 
         setIsGenerating(true);
         try {
-            // Clone the printable node to avoid modifying the original
             const clone = printableRef.current.cloneNode(true);
             document.body.appendChild(clone);
-
-            // Inline images as base64
             await inlineImages(clone);
-
-            // Get the processed HTML with inlined images
             const processedHtml = clone.innerHTML;
             document.body.removeChild(clone);
 
             const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>RAMS PDF</title></head><body>${processedHtml}</body></html>`;
+            console.log('HTML length:', fullHtml.length);
 
-            console.log('HTML length:', fullHtml.length); // Check size
-
-            // Send to PDFShift API
             const response = await axios.post(
                 'https://api.pdfshift.io/v3/convert/pdf',
                 {
@@ -93,7 +86,6 @@ const PreviewModal = ({ isOpen, onClose, data, allTasks }) => {
                 }
             );
 
-            // Download the PDF
             const blob = new Blob([response.data], { type: 'application/pdf' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -207,7 +199,6 @@ const PreviewModal = ({ isOpen, onClose, data, allTasks }) => {
                 </div>
             </div>
 
-            {/* Hidden print container (used by both print and PDFShift) */}
             <div className="print-only" style={{ display: 'none' }}>
                 <div ref={printableRef}>
                     <PrintableDocument data={data} allTasks={allTasks} />

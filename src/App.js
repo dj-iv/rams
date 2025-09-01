@@ -1,17 +1,16 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import uctelLogo from './assets/uctel-logo.png';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { db } from './firebase'; 
-import { collection, getDocs, doc, setDoc, deleteDoc, addDoc } from 'firebase/firestore'; 
-import { RISK_ASSESSMENTS, DEFAULT_PERMITS, DEFAULT_PPE, DEFAULT_TOOLS, DEFAULT_MATERIALS } from './constants';
+import { collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore'; 
+import { DEFAULT_PERMITS, DEFAULT_PPE, DEFAULT_TOOLS, DEFAULT_MATERIALS } from './constants';
 import Step1 from './components/steps/Step1';
 import Step2 from './components/steps/Step2';
 import Step4 from './components/steps/Step4';
 import Step5 from './components/steps/Step5';
 import Step6 from './components/steps/Step6';
 import Step7 from './components/steps/Step7';
-import PrintableDocument from './components/PrintableDocument';
 import PreviewModal from './components/PreviewModal'; // Ensure this import is present
 
 const buildInitialTasks = (allTasks, template, templates) => {
@@ -289,7 +288,7 @@ const AppContent = () => {
   const [dbTools, setDbTools] = useState([]);
   const [dbMaterials, setDbMaterials] = useState([]);
   const [dbPermits, setDbPermits] = useState([]);
-  
+  const [dbTeamMembers, setDbTeamMembers] = useState([]);
   const [allTasks, setAllTasks] = useState({});
   const [allTemplates, setAllTemplates] = useState({});
   const [isLoading, setIsLoading] = useState(true);
@@ -297,11 +296,9 @@ const AppContent = () => {
   const [showNewTaskForm, setShowNewTaskForm] = useState(false);
   const [showNewTemplateForm, setShowNewTemplateForm] = useState(false);
   const [step, setStep] = useState(1);
-  const previewRef = useRef(null);
   const [addingHazardTo, setAddingHazardTo] = useState(null); // State to track which risk category is getting a new hazard
   const [showNewRiskCategoryForm, setShowNewRiskCategoryForm] = useState(false);
   const [showPreview, setShowPreview] = useState(false); // Add state for modal visibility
-  const navigate = useNavigate();
 
 useEffect(() => {
      // This effect now runs once the initial data fetch is complete, even if some collections are empty.
@@ -319,7 +316,7 @@ useEffect(() => {
           preparedByPhone: '+44 7730 890403',
           documentCreationDate: new Date().toISOString().slice(0, 10),
           revisionNumber: '1',
-          projectTeam: [ { id: 1, name: 'James Smith', role: 'Project Coordinator', phone: '+44 7730 890403', competencies: 'First Aid, Working at Height'}, { id: 2, name: '', role: '', phone: '', competencies: ''} ],
+          projectTeam: [ { id: '1', name: 'James Smith', role: 'Project Coordinator', phone: '+44 7730 890403', competencies: 'First Aid, Working at Height'} ],
           jobTemplate: initialTemplateKey,
           selectedTasks: buildInitialTasks(allTasks, initialTemplateKey, allTemplates),
           risks: JSON.parse(JSON.stringify(allRisks)), // Use fetched risks
@@ -336,7 +333,7 @@ useEffect(() => {
         };
       setFormData(initialFormState);
     }
-}, [isLoading, formData, allTasks, allTemplates, allRisks, dbPpe, dbTools, dbMaterials, dbPermits]);
+}, [isLoading, formData, allTasks, allTemplates, allRisks, dbPpe, dbTools, dbMaterials, dbPermits, dbTeamMembers]);
 
     useEffect(() => {
     const fetchData = async () => {
@@ -379,6 +376,11 @@ useEffect(() => {
           risksData[doc.id] = doc.data();
         });
         setAllRisks(risksData);
+
+        const teamMembersCollection = collection(db, 'teamMembers');
+        const teamMembersSnapshot = await getDocs(teamMembersCollection);
+        const teamMembersData = teamMembersSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+        setDbTeamMembers(teamMembersData);
 
         setIsLoading(false);
       } catch (error) {
@@ -551,11 +553,6 @@ useEffect(() => {
     }
   };
 
-  const handleTextAreaChange = useCallback((e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  }, []);
-
   const handleTemplateChange = (e) => {
     const templateKey = e.target.value;
     
@@ -624,27 +621,63 @@ useEffect(() => {
     });
   };
 
-  const handleProjectTeamChange = useCallback((index, field, value) => {
-    setFormData(prev => {
-      const updatedTeam = [...prev.projectTeam];
-      updatedTeam[index][field] = value;
-      return { ...prev, projectTeam: updatedTeam };
-    });
-  }, []);
-
-  const addTeamMember = () => {
-    setFormData(prev => ({
-      ...prev,
-      projectTeam: [...prev.projectTeam, { id: Date.now(), name: '', role: '', phone: '' }]
-    }));
+  const handleSelectTeamMember = (memberId) => {
+    const selectedMember = dbTeamMembers.find(m => m.id === memberId);
+    if (selectedMember) {
+      setFormData(prev => ({
+        ...prev,
+        projectTeam: [...prev.projectTeam, { ...selectedMember }]
+      }));
+    }
   };
 
-  const removeTeamMember = useCallback((index) => {
+  const handleProjectTeamChange = useCallback(async (index, field, value) => {
+    const updatedMember = { ...formData.projectTeam[index], [field]: value };
+    setFormData(prev => {
+      const updatedTeam = [...prev.projectTeam];
+      updatedTeam[index] = updatedMember;
+      return { ...prev, projectTeam: updatedTeam };
+    });
+    if (updatedMember.id) {
+      try {
+        await setDoc(doc(db, 'teamMembers', updatedMember.id), updatedMember, { merge: true });
+        setDbTeamMembers(prev => prev.map(m => m.id === updatedMember.id ? updatedMember : m));
+      } catch (error) {
+        console.error("Error updating team member:", error);
+      }
+    }
+  }, [formData]);
+
+  const addTeamMember = async () => {
+    const newId = Date.now().toString();
+    const newMember = { id: newId, name: '', role: '', phone: '', competencies: '' };
+    try {
+      await setDoc(doc(db, 'teamMembers', newId), newMember);
+      setDbTeamMembers(prev => [...prev, newMember]);
+      setFormData(prev => ({
+        ...prev,
+        projectTeam: [...prev.projectTeam, newMember]
+      }));
+    } catch (error) {
+      console.error("Error adding team member:", error);
+    }
+  };
+
+  const removeTeamMember = useCallback(async (index) => {
+    const member = formData.projectTeam[index];
+    if (member.id) {
+      try {
+        await deleteDoc(doc(db, 'teamMembers', member.id));
+        setDbTeamMembers(prev => prev.filter(m => m.id !== member.id));
+      } catch (error) {
+        console.error("Error removing team member:", error);
+      }
+    }
     setFormData(prev => {
       const updatedTeam = prev.projectTeam.filter((_, i) => i !== index);
       return { ...prev, projectTeam: updatedTeam };
     });
-  }, []);
+  }, [formData]);
 
   const handleAddNewRiskCategory = async ({ title }) => {
     if (!title.trim()) {
@@ -792,7 +825,7 @@ useEffect(() => {
   const renderStep = () => {
     switch (step) {
       case 1: return <Step1 data={formData} handler={handleInputChange} />;
-      case 2: return <Step2 data={formData} onChange={handleProjectTeamChange} onAdd={addTeamMember} onRemove={removeTeamMember} />;
+      case 2: return <Step2 data={formData} onChange={handleProjectTeamChange} onAdd={addTeamMember} onRemove={removeTeamMember} dbTeamMembers={dbTeamMembers} onSelectMember={handleSelectTeamMember} />;
      case 3: return <Step3 
           data={formData} 
           allTasks={allTasks} 

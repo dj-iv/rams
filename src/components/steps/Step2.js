@@ -1,10 +1,19 @@
 import React from 'react';
 import FormSection from '../ui/FormSection';
 
-const Step2 = ({ data, onChange, onAdd, onRemove }) => (
+const Step2 = ({ data, onChange, onAdd, onRemove, dbTeamMembers, onSelectMember }) => (
     <div>
         <FormSection title="Step 2: Project Team" gridCols={1}>
             <p className="text-slate-600 md:col-span-1 -mt-4 mb-2">List the key personnel involved in this project.</p>
+            <div className="mb-4">
+                <label className="text-sm font-semibold text-slate-600">Add Existing Team Member</label>
+                <select onChange={(e) => { if (e.target.value) { onSelectMember(e.target.value); e.target.value = ''; } }} className="w-full mt-1 p-2 border border-slate-300 rounded-md">
+                    <option value="">Select a team member...</option>
+                    {dbTeamMembers.map(member => (
+                        <option key={member.id} value={member.id}>{member.name} - {member.role}</option>
+                    ))}
+                </select>
+            </div>
             <div className="space-y-4">
                 {data.projectTeam.map((member, index) => (
                     <div key={member.id} className="grid grid-cols-1 md:grid-cols-8 gap-4 p-4 border rounded-lg bg-slate-50 relative">
@@ -31,7 +40,7 @@ const Step2 = ({ data, onChange, onAdd, onRemove }) => (
                 ))}
             </div>
             <button onClick={onAdd} className="mt-4 bg-blue-100 text-[var(--uctel-blue)] font-semibold py-2 px-4 rounded-lg hover:bg-blue-200 transition-colors text-sm">
-                + Add Team Member
+                + Add New Team Member
             </button>
         </FormSection>
     </div>
