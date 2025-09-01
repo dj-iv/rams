@@ -182,6 +182,19 @@ module.exports = async (req, res) => {
     img {
       max-width: 100%;
       height: auto;
+      display: block;
+      margin: 0 auto;
+      page-break-inside: avoid;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    /* Image containers */
+    div[style*="display: flex"] img,
+    div[style*="justifyContent: center"] img {
+      max-height: 150px;
+      object-fit: contain;
+      border-radius: 4px;
+      border: 1px solid #ccc;
     }
   /* Prevent header/logo splitting from the first content block */
   .printable-document header { page-break-after: avoid; break-after: avoid; }
@@ -210,13 +223,16 @@ module.exports = async (req, res) => {
     margin_left: '20mm',
     margin_right: '20mm',
     render_background: 'true',
-    render_delay: 5000, // give fonts/images more time to load
+    render_delay: 8000, // Increased delay for image processing
   viewport_width: 2000,
   viewport_height: 3000,
         no_images: 0,
   scale: 2,
         use_css: 'true',
-        custom_unit: 'mm'
+        custom_unit: 'mm',
+        allow_custom_fonts: 'true',
+        image_quality: 90, // Optimize image quality
+        compress: 'true' // Enable compression
       })
     });
 

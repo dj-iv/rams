@@ -283,26 +283,130 @@ const PrintableDocument = ({ data, allTasks }) => {
             </Section>
 
             <Section title="2.0 Project Team">
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <table style={{ 
+                    width: '100%', 
+                    borderCollapse: 'collapse',
+                    border: '2px solid #2c4f6b',
+                    backgroundColor: '#ffffff'
+                }}>
                     <thead>
-                        <tr>
-                            <th style={tableHeaderStyle}>Name</th>
-                            <th style={tableHeaderStyle}>Role</th>
-                            <th style={tableHeaderStyle}>Competencies</th>  {/* Swapped: Competencies now before Phone */}
-                            <th style={tableHeaderStyle}>Phone</th>       {/* Swapped: Phone now after Competencies */}
+                        <tr style={{ backgroundColor: '#2c4f6b' }}>
+                            <th style={{
+                                ...tableHeaderStyle,
+                                backgroundColor: '#2c4f6b',
+                                color: 'white',
+                                padding: '12px 8px',
+                                fontWeight: 'bold',
+                                width: '25%'
+                            }}>Name</th>
+                            <th style={{
+                                ...tableHeaderStyle,
+                                backgroundColor: '#2c4f6b',
+                                color: 'white',
+                                padding: '12px 8px',
+                                fontWeight: 'bold',
+                                width: '20%'
+                            }}>Role</th>
+                            <th style={{
+                                ...tableHeaderStyle,
+                                backgroundColor: '#2c4f6b',
+                                color: 'white',
+                                padding: '12px 8px',
+                                fontWeight: 'bold',
+                                width: '35%'
+                            }}>Competencies</th>
+                            <th style={{
+                                ...tableHeaderStyle,
+                                backgroundColor: '#2c4f6b',
+                                color: 'white',
+                                padding: '12px 8px',
+                                fontWeight: 'bold',
+                                width: '20%'
+                            }}>Contact</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {projectTeam.filter(member => member.name).map(member => (
-                            <tr key={member.id}>
-                                <td style={cellStyle}>{member.name}</td>
-                                <td style={cellStyle}>{member.role}</td>
-                                <td style={cellStyle}>{member.competencies}</td>  {/* Swapped: Competencies now before Phone */}
-                                <td style={cellStyle}>{member.phone}</td>         {/* Swapped: Phone now after Competencies */}
+                        {projectTeam.filter(member => member.name).map((member, index) => (
+                            <tr key={member.id} style={{
+                                backgroundColor: index % 2 === 0 ? '#f8f9fa' : '#ffffff',
+                                borderBottom: '1px solid #dee2e6'
+                            }}>
+                                <td style={{
+                                    ...cellStyle,
+                                    padding: '12px 8px',
+                                    fontWeight: '600',
+                                    color: '#2c4f6b'
+                                }}>{member.name}</td>
+                                <td style={{
+                                    ...cellStyle,
+                                    padding: '12px 8px',
+                                    fontStyle: 'italic',
+                                    color: '#495057'
+                                }}>{member.role}</td>
+                                <td style={{
+                                    ...cellStyle,
+                                    padding: '12px 8px',
+                                    fontSize: '11px',
+                                    lineHeight: '1.4'
+                                }}>
+                                    {member.competencies ? (
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                            {member.competencies.split(',').map((comp, compIndex) => (
+                                                <span key={compIndex} style={{
+                                                    backgroundColor: '#e3f2fd',
+                                                    color: '#1976d2',
+                                                    padding: '2px 6px',
+                                                    borderRadius: '12px',
+                                                    fontSize: '10px',
+                                                    fontWeight: '500',
+                                                    border: '1px solid #bbdefb'
+                                                }}>
+                                                    {comp.trim()}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <span style={{ color: '#6c757d', fontStyle: 'italic' }}>No competencies listed</span>
+                                    )}
+                                </td>
+                                <td style={{
+                                    ...cellStyle,
+                                    padding: '12px 8px',
+                                    fontSize: '11px',
+                                    fontFamily: 'monospace'
+                                }}>
+                                    {member.phone ? (
+                                        <div style={{
+                                            backgroundColor: '#f1f3f4',
+                                            padding: '4px 8px',
+                                            borderRadius: '4px',
+                                            border: '1px solid #dadce0',
+                                            textAlign: 'center'
+                                        }}>
+                                            📞 {member.phone}
+                                        </div>
+                                    ) : (
+                                        <span style={{ color: '#6c757d', fontStyle: 'italic' }}>No contact provided</span>
+                                    )}
+                                </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
+                
+                {/* Team Summary Footer */}
+                <div style={{
+                    marginTop: '15px',
+                    padding: '10px',
+                    backgroundColor: '#f8f9fa',
+                    border: '1px solid #dee2e6',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    color: '#495057'
+                }}>
+                    <strong>Team Size:</strong> {projectTeam.filter(member => member.name).length} member(s) | 
+                    <strong> Emergency Contact:</strong> For urgent matters, contact the Project Coordinator
+                </div>
             </Section>
 
             {/* Page Break */}
@@ -321,21 +425,55 @@ const PrintableDocument = ({ data, allTasks }) => {
                                 3.{index + 1} {allTasks[task.taskId]?.title || 'Unknown Task'}
                             </h4>
                             <p style={{
-                                margin: 0,
+                                margin: '0 0 10px 0',
                                 lineHeight: '1.5'
                             }}>
                                 {task.description}
                             </p>
+                            
+                            {/* Display uploaded images */}
+                            {task.images && task.images.length > 0 && (
+                                <div style={{ 
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    flexWrap: 'wrap',
+                                    gap: '15px',
+                                    margin: '15px 0'
+                                }}>
+                                    {task.images.map((image, imgIndex) => (
+                                        <div key={imgIndex} style={{ 
+                                            textAlign: 'center',
+                                            maxWidth: '200px'
+                                        }}>
+                                            <img
+                                                src={image.dataUrl}
+                                                alt={`${allTasks[task.taskId]?.title || 'Task'} - Image ${imgIndex + 1}`}
+                                                style={{
+                                                    maxWidth: '100%',
+                                                    maxHeight: '150px',
+                                                    border: '1px solid #ccc',
+                                                    borderRadius: '4px',
+                                                    objectFit: 'contain',
+                                                    display: 'block',
+                                                    margin: '0 auto'
+                                                }}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
             </Section>
 
-            {/* Page Break */}
-            <div className="page-break"></div>
+            {/* Conditional Page Break - only if there are risks to display */}
+            {Object.entries(risks).length > 0 && enabledTasks.length > 0 && <div className="page-break"></div>}
 
             <Section title="4.0 Risk Assessments">
-                {Object.entries(risks).map(([key, riskCategory], categoryIndex) => (
+                {Object.entries(risks)
+                    .filter(([key, riskCategory]) => riskCategory.hazards.some(h => h.selected))
+                    .map(([key, riskCategory], categoryIndex) => (
                     <div key={key}>
                         {/* Page break before each risk category (except the first) */}
                         {categoryIndex > 0 && <div className="page-break"></div>}
@@ -454,8 +592,8 @@ const PrintableDocument = ({ data, allTasks }) => {
                 </div>
             </Section>
 
-            {/* Page Break */}
-            <div className="page-break"></div>
+            {/* Conditional Page Break - only if there are safety/logistics items */}
+            {safetyLogistics.length > 0 && <div className="page-break"></div>}
 
             <Section title="5.0 Safety & Logistics">
                 {safetyLogistics.map((item, index) => (
@@ -497,8 +635,8 @@ const PrintableDocument = ({ data, allTasks }) => {
                 ))}
             </Section>
 
-            {/* Page Break */}
-            <div className="page-break"></div>
+            {/* Conditional Page Break - only if there's substantial content above */}
+            {(safetyLogistics.length > 2 || Object.entries(risks).length > 0) && <div className="page-break"></div>}
 
             <Section title="6.0 Equipment">
                 <div style={{ fontSize: '12px' }}>
@@ -555,8 +693,8 @@ const PrintableDocument = ({ data, allTasks }) => {
                 </div>
             </Section>
 
-            {/* Page Break */}
-            <div className="page-break"></div>
+            {/* Conditional Page Break - only if there are risks to summarize */}
+            {Object.entries(risks).length > 0 && Object.values(risks).some(category => category.hazards.some(h => h.selected)) && <div className="page-break"></div>}
 
             <Section title="7.0 Risk Summary & Analysis">
                 {(() => {
@@ -733,8 +871,8 @@ const PrintableDocument = ({ data, allTasks }) => {
                 })()}
             </Section>
 
-            {/* Page Break */}
-            <div className="page-break"></div>
+            {/* Conditional Page Break before Approval - only if there's substantial content above */}
+            {(Object.entries(risks).length > 0 || enabledTasks.length > 2) && <div className="page-break"></div>}
 
             <Section title="8.0 Approval & Sign-Off">
                 {/* Declaration */}

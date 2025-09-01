@@ -24,6 +24,7 @@ const buildInitialTasks = (allTasks, template, templates) => {
         selectedOption: Object.keys(taskInfo.options)[0],
         description: Object.values(taskInfo.options)[0].description,
         enabled: false,
+        images: [], // Add images array to store uploaded images
       }));
   }
   const templateTaskIds = templates[template].taskIds || [];
@@ -36,6 +37,7 @@ const buildInitialTasks = (allTasks, template, templates) => {
       selectedOption: Object.keys(taskInfo.options)[0],
       description: Object.values(taskInfo.options)[0].description,
       enabled: templateTaskIds.includes(taskId), // Enable if task ID is in the template
+      images: [], // Add images array to store uploaded images
     }));
 };
 
@@ -206,12 +208,52 @@ const TaskItem = ({ task, index, allTasks, handlers }) => {
                {showNewOptionForm ? (
                 <AddNewOptionForm taskId={task.taskId} onSave={handlers.handleAddNewOption} onCancel={() => setShowNewOptionForm(false)} />
               ) : (
-                <textarea 
-                  value={task.description}
-                  onChange={(e) => handlers.handleTaskDescriptionChange(task.id, e.target.value)}
-                  className="w-full p-2 border border-slate-200 rounded-md text-sm bg-slate-50"
-                  rows={3}
-                />
+                <div className="space-y-3">
+                  <textarea 
+                    value={task.description}
+                    onChange={(e) => handlers.handleTaskDescriptionChange(task.id, e.target.value)}
+                    className="w-full p-2 border border-slate-200 rounded-md text-sm bg-slate-50"
+                    rows={3}
+                  />
+                  
+                  {/* Image Upload Section */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Task Images (optional)
+                    </label>
+                    
+                    {/* Image Upload Input */}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => handlers.handleTaskImageUpload(task.id, e.target.files)}
+                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[var(--uctel-blue)] file:text-white hover:file:bg-blue-700"
+                    />
+                    
+                    {/* Image Previews */}
+                    {task.images && task.images.length > 0 && (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {task.images.map((image, imgIndex) => (
+                          <div key={imgIndex} className="relative group">
+                            <img
+                              src={image.dataUrl}
+                              alt={`Task image ${imgIndex + 1}`}
+                              className="w-full h-20 object-cover rounded border"
+                            />
+                            <button
+                              onClick={() => handlers.handleTaskImageRemove(task.id, imgIndex)}
+                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Remove image"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           )}
@@ -599,6 +641,98 @@ useEffect(() => {
         )
     }));
   }, []);
+
+  // Handle image upload for tasks
+  // Handle image upload with optimization for PDF generation
+  const handleTaskImageUpload = useCallback((uniqueId, files) => {
+    const fileArray = Array.from(files);
+    const maxFileSize = 2 * 1024 * 1024; // Reduced to 2MB for PDF compatibility
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    
+    // Validate files
+    for (const file of fileArray) {
+      if (!allowedTypes.includes(file.type)) {
+        alert(`File "${file.name}" is not a supported image format. Please use JPG, PNG, GIF, or WebP.`);
+        return;
+      }
+      if (file.size > maxFileSize) {
+        alert(`File "${file.name}" is too large. Please use images under 2MB for PDF compatibility.`);
+        return;
+      }
+    }
+
+    // Function to compress and resize image
+    const compressImage = (file) => {
+      return new Promise((resolve) => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        
+        img.onload = () => {
+          // Calculate new dimensions (max 800px width, maintain aspect ratio)
+          const maxWidth = 800;
+          const maxHeight = 600;
+          let { width, height } = img;
+          
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+          
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height;
+            height = maxHeight;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          // Draw and compress
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Convert to compressed JPEG with 0.8 quality for PDF compatibility
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          
+          resolve({
+            id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            name: file.name,
+            dataUrl: compressedDataUrl,
+            size: Math.round(compressedDataUrl.length * 0.75), // Approximate size
+            type: 'image/jpeg' // Standardize to JPEG for PDF
+          });
+        };
+        
+        // Create object URL for the image
+        img.src = URL.createObjectURL(file);
+      });
+    };
+
+    // Convert and compress all files
+    const promises = fileArray.map(compressImage);
+
+    Promise.all(promises).then(images => {
+      setFormData(prev => ({
+        ...prev,
+        selectedTasks: prev.selectedTasks.map(task => 
+          task.id === uniqueId 
+            ? { ...task, images: [...(task.images || []), ...images] }
+            : task
+        )
+      }));
+    });
+  }, []);
+
+  // Handle image removal
+  const handleTaskImageRemove = useCallback((uniqueId, imageId) => {
+    setFormData(prev => ({
+      ...prev,
+      selectedTasks: prev.selectedTasks.map(task => 
+        task.id === uniqueId 
+          ? { ...task, images: (task.images || []).filter(img => img.id !== imageId) }
+          : task
+      )
+    }));
+  }, []);
   
   const handleOnDragEnd = useCallback((result) => {
       if (!result.destination) return;
@@ -844,7 +978,9 @@ useEffect(() => {
             handleCreateTemplate,
             handleCreateAndAddTask, // Add this
             setShowNewTemplateForm,
-            setShowNewTaskForm      // Add this
+            setShowNewTaskForm,     // Add this
+            handleTaskImageUpload,
+            handleTaskImageRemove
           }}
           showNewTemplateForm={showNewTemplateForm}
           showNewTaskForm={showNewTaskForm} // And pass this state
