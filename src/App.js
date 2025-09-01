@@ -22,7 +22,7 @@ const buildInitialTasks = (allTasks, template, templates) => {
         id: `${taskId}-${Date.now()}`,
         taskId: taskId,
         selectedOption: Object.keys(taskInfo.options)[0],
-        description: Object.values(taskInfo.options)[0].description,
+        description: taskInfo.defaultDescription || Object.values(taskInfo.options)[0].description,
         enabled: false,
         images: [], // Add images array to store uploaded images
       }));
@@ -35,7 +35,7 @@ const buildInitialTasks = (allTasks, template, templates) => {
       id: `${taskId}-${Date.now()}`,
       taskId: taskId,
       selectedOption: Object.keys(taskInfo.options)[0],
-      description: Object.values(taskInfo.options)[0].description,
+      description: taskInfo.defaultDescription || Object.values(taskInfo.options)[0].description,
       enabled: templateTaskIds.includes(taskId), // Enable if task ID is in the template
       images: [], // Add images array to store uploaded images
     }));
@@ -209,12 +209,28 @@ const TaskItem = ({ task, index, allTasks, handlers }) => {
                 <AddNewOptionForm taskId={task.taskId} onSave={handlers.handleAddNewOption} onCancel={() => setShowNewOptionForm(false)} />
               ) : (
                 <div className="space-y-3">
-                  <textarea 
-                    value={task.description}
-                    onChange={(e) => handlers.handleTaskDescriptionChange(task.id, e.target.value)}
-                    className="w-full p-2 border border-slate-200 rounded-md text-sm bg-slate-50"
-                    rows={3}
-                  />
+                  <div className="space-y-2">
+                    <textarea 
+                      value={task.description}
+                      onChange={(e) => handlers.handleTaskDescriptionChange(task.id, e.target.value)}
+                      className="w-full p-2 border border-slate-200 rounded-md text-sm bg-slate-50"
+                      rows={3}
+                    />
+                    
+                    {/* Update Default Button */}
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => handlers.handleUpdateTaskDefault(task.taskId, task.id)}
+                        className="px-3 py-1 text-xs bg-[var(--uctel-teal)] text-white rounded-md hover:bg-teal-600 transition-colors duration-200 flex items-center gap-1"
+                        title="Save this description as the default for all new tasks of this type"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Update Default
+                      </button>
+                    </div>
+                  </div>
                   
                   {/* Image Upload Section */}
                   <div className="space-y-2">
@@ -624,7 +640,8 @@ useEffect(() => {
     setFormData(prev => {
         const newTasks = prev.selectedTasks.map(task => {
             if (task.id === uniqueId) {
-                const newDescription = allTasks[task.taskId].options[newOptionKey]?.description || '';
+                const taskInfo = allTasks[task.taskId];
+                const newDescription = taskInfo.defaultDescription || taskInfo.options[newOptionKey]?.description || '';
                 return { ...task, selectedOption: newOptionKey, description: newDescription };
             }
             return task;
@@ -641,6 +658,28 @@ useEffect(() => {
         )
     }));
   }, []);
+
+  // Handle updating the default description for a task type
+  const handleUpdateTaskDefault = useCallback((taskId, uniqueId) => {
+    // Find the current task's description
+    const currentTask = formData?.selectedTasks?.find(task => task.id === uniqueId);
+    if (!currentTask || !formData) {
+      console.error('Cannot update default: task or formData not found');
+      return;
+    }
+
+    // Update the default description in allTasks
+    setAllTasks(prev => ({
+      ...prev,
+      [taskId]: {
+        ...prev[taskId],
+        defaultDescription: currentTask.description
+      }
+    }));
+
+    // Show confirmation
+    alert(`Default description updated for "${allTasks[taskId]?.title || 'this task'}".\nNew tasks of this type will use this description.`);
+  }, [formData, allTasks]);
 
   // Handle image upload for tasks
   // Handle image upload with optimization for PDF generation
@@ -980,7 +1019,8 @@ useEffect(() => {
             setShowNewTemplateForm,
             setShowNewTaskForm,     // Add this
             handleTaskImageUpload,
-            handleTaskImageRemove
+            handleTaskImageRemove,
+            handleUpdateTaskDefault
           }}
           showNewTemplateForm={showNewTemplateForm}
           showNewTaskForm={showNewTaskForm} // And pass this state
