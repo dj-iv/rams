@@ -110,6 +110,114 @@ const PreviewModal = ({ isOpen, onClose, data, allTasks }) => {
 
     if (!isOpen) return null;
 
+    const renderContentPage = () => (
+      <div className="page">
+        <h1 className="text-center text-3xl font-bold mb-8">Table of Contents</h1>
+        <div className="space-y-2">
+          <div className="flex justify-between">
+            <span>1.0 Project Information</span>
+            <span>2</span>
+          </div>
+          <div className="flex justify-between">
+            <span>2.0 Project Team</span>
+            <span>3</span>
+          </div>
+          <div className="flex justify-between">
+            <span>3.0 Method Statement</span>
+            <span>4</span>
+          </div>
+          <div className="flex justify-between">
+            <span>4.0 Risk Assessment</span>
+            <span>5</span>
+          </div>
+          <div className="flex justify-between">
+            <span>5.0 Safety & Logistics</span>
+            <span>6</span>
+          </div>
+          <div className="flex justify-between">
+            <span>6.0 Equipment</span>
+            <span>7</span>
+          </div>
+        </div>
+      </div>
+    );
+
+    const renderSafetyLogistics = () => (
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold mb-4">5.0 Safety & Logistics</h2>
+        
+        {/* Permits */}
+        <div className="mb-6">
+          <h3 className="text-xl font-semibold mb-2">5.1 Permits Required</h3>
+          <ul className="list-disc pl-6">
+            {data.safetyLogistics.find(s => s.id === 'permits')?.items
+              .filter(item => item.selected)
+              .map(item => <li key={item.id}>{item.name}</li>)}
+          </ul>
+        </div>
+
+        {/* Waste Management */}
+        <div className="mb-6">
+          <h3 className="text-xl font-semibold mb-2">5.2 Waste Management</h3>
+          <p>{data.safetyLogistics.find(s => s.id === 'waste')?.details}</p>
+        </div>
+
+        {/* COSHH */}
+        <div className="mb-6">
+          <h3 className="text-xl font-semibold mb-2">5.3 COSHH (Control of Substances Hazardous to Health)</h3>
+          <p>{data.safetyLogistics.find(s => s.id === 'coshh')?.details}</p>
+        </div>
+
+        {/* Third-Party Safety Measures */}
+        <div className="mb-6">
+          <h3 className="text-xl font-semibold mb-2">5.4 Third-Party Safety Measures</h3>
+          <p>{data.safetyLogistics.find(s => s.id === 'thirdPartySafety')?.details}</p>
+        </div>
+
+        {/* Emergency Arrangements */}
+        <div className="mb-6">
+          <h3 className="text-xl font-semibold mb-2">5.5 Emergency Arrangements</h3>
+          <p>{data.safetyLogistics.find(s => s.id === 'emergencyArrangements')?.details}</p>
+        </div>
+      </div>
+    );
+
+    const renderEquipment = () => (
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold mb-4">6.0 Equipment</h2>
+        
+        {/* PPE */}
+        <div className="mb-6">
+          <h3 className="text-xl font-semibold mb-2">6.1 Personal Protective Equipment (PPE)</h3>
+          <ul className="list-disc pl-6">
+            {data.ppe.filter(item => item.selected).map(item => (
+              <li key={item.id}>{item.name}</li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Tools */}
+        <div className="mb-6">
+          <h3 className="text-xl font-semibold mb-2">6.2 Tools</h3>
+          <ul className="list-disc pl-6">
+            {data.tools.filter(item => item.selected).map(item => (
+              <li key={item.id}>{item.name}</li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Materials */}
+        <div className="mb-6">
+          <h3 className="text-xl font-semibold mb-2">6.3 Materials</h3>
+          <ul className="list-disc pl-6">
+            {data.materials.filter(item => item.selected).map(item => (
+              <li key={item.id}>{item.name}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    );
+
     return (
         <>
             <div className="preview-modal-overlay no-print" style={{

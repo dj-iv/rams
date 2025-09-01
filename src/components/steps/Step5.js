@@ -82,7 +82,29 @@ const Step5 = ({ data, handlers }) => {
                 {data.safetyLogistics.map(category => {
                     switch (category.type) {
                         case 'selectableList':
-                            return <SelectableList key={category.id} category={category} onToggle={handlers.handleSafetyListItemToggle} onAddCustom={handlers.handleAddCustomSafetyItem} />;
+                            return (
+                                <div key={category.id}>
+                                    <SelectableList 
+                                        category={category} 
+                                        onToggle={handlers.handleSafetyListItemToggle} 
+                                        onAddCustom={handlers.handleAddCustomSafetyItem} 
+                                    />
+                                    {category.id === 'permits' && (
+                                        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                            <label className="block text-sm font-medium text-blue-800 mb-2">
+                                                Permits Details (Optional)
+                                            </label>
+                                            <textarea
+                                                value={data.permitsDetails || ''}
+                                                onChange={(e) => handlers.handleInputChange({ target: { name: 'permitsDetails', value: e.target.value } })}
+                                                placeholder="Add site-specific details about where/how permits are obtained..."
+                                                rows={3}
+                                                className="w-full p-2 border border-blue-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            );
                         case 'booleanWithText':
                             return <BooleanWithTextCategory key={category.id} category={category} onChange={handlers.handleSafetyLogisticsChange} />;
                         case 'textArea':

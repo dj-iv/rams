@@ -324,12 +324,16 @@ useEffect(() => {
           tools: JSON.parse(JSON.stringify(dbTools.length > 0 ? dbTools : DEFAULT_TOOLS)),
           materials: JSON.parse(JSON.stringify(dbMaterials.length > 0 ? dbMaterials : DEFAULT_MATERIALS)),
           safetyLogistics: [
-            { id: 'permits', title: 'Permits Required', type: 'selectableList', items: JSON.parse(JSON.stringify(dbPermits.length > 0 ? dbPermits : DEFAULT_PERMITS)) },
+            { id: 'permits', title: 'Permits Required', type: 'selectableList', items: JSON.parse(JSON.stringify(dbPermits.length > 0 ? dbPermits : DEFAULT_PERMITS)), details: '' },
             { id: 'waste', title: 'Waste Management', type: 'booleanWithText', question: 'Will your work produce waste?', enabled: true, details: 'Where possible, all waste materials generated during UCtel works will be disposed of using the bins provided by the client on-site.' },
             { id: 'coshh', title: 'COSHH (Control of Substances Hazardous to Health)', type: 'booleanWithText', question: 'Will you use hazardous substances?', enabled: false, details: 'UCtel does not anticipate the use of any hazardous materials or substances during the works.' },
             { id: 'thirdPartySafety', title: 'Third-Party Safety Measures', type: 'textArea', details: 'UCtel will utilise clear warning signage ("Work in Progress", "Keep Clear") to notify of active work areas.\n• Tools, cabling and equipment will be kept tidy and secured to prevent obstruction of pedestrian routes or fire exits.\n• Work areas will be cordoned off where appropriate to minimise the risk of unauthorised access.' },
             { id: 'emergencyArrangements', title: 'Emergency Arrangements', type: 'textArea', details: 'The nearest A&E is located at University Hospital Coventry and Warwickshire (UHCW) - Clifford Bridge Road, Coventry, CV2 2DX.' }
           ],
+          permitsDetails: '',
+          ppeDetails: '',
+          toolsDetails: '',
+          materialsDetails: '',
         };
       setFormData(initialFormState);
     }
@@ -863,10 +867,11 @@ useEffect(() => {
             handleSafetyLogisticsChange,
             handleSafetyListItemToggle,
             handleAddCustomSafetyItem,
-            handleAddNewSafetyCategory
+            handleAddNewSafetyCategory,
+            handleInputChange
           }} 
         />;
-      case 6: return <Step6 data={formData} handlers={{ handleSelectableListToggle, handleAddCustomSafetyItem: addCustomItem, handleCustomItemChange, removeCustomItem }} />;
+      case 6: return <Step6 data={formData} handlers={{ handleSelectableListToggle, handleAddCustomSafetyItem: addCustomItem, handleCustomItemChange, removeCustomItem, handleInputChange }} />;
      
       case 7: return <Step7 previewHandler={handlePreview} />;
       default: return <Step1 data={formData} handler={handleInputChange} />;

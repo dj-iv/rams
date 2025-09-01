@@ -71,6 +71,15 @@ const PrintableDocument = ({ data, allTasks }) => {
         transform: 'rotate(180deg)', // Flips the vertical text to read bottom-to-top
     };
 
+    const rotatedTextStyle = {
+        writingMode: 'vertical-rl',
+        textAlign: 'center',
+        transform: 'rotate(180deg)',
+        display: 'inline-block',
+        whiteSpace: 'nowrap',
+        lineHeight: '1.2',
+    };
+
     const cellStyle = {
         padding: '8px',
         fontSize: '10px',
@@ -119,6 +128,40 @@ const PrintableDocument = ({ data, allTasks }) => {
                 </h1>
             </header>
 
+            {/* Table of Contents */}
+            <Section title="Table of Contents">
+                <div style={{ fontSize: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                        <span>1.0 Project Details</span>
+                        <span>2</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                        <span>2.0 Project Team</span>
+                        <span>3</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                        <span>3.0 Method Statement (Sequence of Works)</span>
+                        <span>4</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                        <span>4.0 Risk Assessments</span>
+                        <span>5</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                        <span>5.0 Safety & Logistics</span>
+                        <span>6</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                        <span>6.0 Equipment</span>
+                        <span>7</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                        <span>7.0 Approval & Sign-Off</span>
+                        <span>8</span>
+                    </div>
+                </div>
+            </Section>
+
             <Section title="1.0 Project Details">
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                     <div>
@@ -161,15 +204,15 @@ const PrintableDocument = ({ data, allTasks }) => {
 
             <Section title="3.0 Method Statement (Sequence of Works)">
                 <div style={{ fontSize: '12px' }}>
-                    {enabledTasks.map((task) => (
+                    {enabledTasks.map((task, index) => (
                         <div key={task.id} style={{ marginBottom: '20px' }}>
                             <h4 style={{
                                 margin: '0 0 5px 0',
-                                color: '#008080',
+                                color: '#2c4f6b',
                                 fontSize: '14px',
                                 fontWeight: 'bold'
                             }}>
-                                {allTasks[task.taskId]?.title || 'Unknown Task'}
+                                3.{index + 1} {allTasks[task.taskId]?.title || 'Unknown Task'}
                             </h4>
                             <p style={{
                                 margin: 0,
@@ -191,8 +234,8 @@ const PrintableDocument = ({ data, allTasks }) => {
                                 <tr>
                                     {/* Using stacked text for narrow columns */}
                                     <th style={{...tableHeaderStyle, width: '6%', textAlign: 'center'}}>Risk<br/>No.</th>
-                                    <th style={{...tableHeaderStyle, width: '18%'}}>Hazard</th>
-                                    <th style={{...tableHeaderStyle, width: '18%'}}>Who/How Harmed</th>
+                                    <th style={{...tableHeaderStyle, width: '15%'}}>Hazard</th>
+                                    <th style={{...tableHeaderStyle, width: '17%'}}>Who/How Harmed</th>
                                     
                                     {/* Use flexbox for robust centering in PDF */}
                                     <th style={{...tableHeaderStyle, width: '6%'}}>
@@ -214,10 +257,22 @@ const PrintableDocument = ({ data, allTasks }) => {
                                         </div>
                                     </th>
 
-                                    <th style={{...tableHeaderStyle, width: '28%'}}>Controls</th>
-                                    <th style={{...rotatedHeaderStyle, width: '4%'}}>Residual Lr</th>
-                                    <th style={{...rotatedHeaderStyle, width: '4%'}}>Residual Sr</th>
-                                    <th style={{...rotatedHeaderStyle, width: '4%'}}>Residual Risk</th>
+                                    <th style={{...tableHeaderStyle, width: '26%'}}>Controls</th>
+                                    <th style={{...tableHeaderStyle, width: '6%', height: '60px'}}>
+                                        <span style={{...rotatedTextStyle}}>
+                                            Residual<br/>Lr
+                                        </span>
+                                    </th>
+                                    <th style={{...tableHeaderStyle, width: '6%', height: '60px'}}>
+                                        <span style={{...rotatedTextStyle}}>
+                                            Residual<br/>Sr
+                                        </span>
+                                    </th>
+                                    <th style={{...tableHeaderStyle, width: '6%', height: '60px'}}>
+                                        <span style={{...rotatedTextStyle}}>
+                                            Residual<br/>Risk
+                                        </span>
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -267,12 +322,36 @@ const PrintableDocument = ({ data, allTasks }) => {
             </Section>
 
             <Section title="5.0 Safety & Logistics">
-                {safetyLogistics.map(item => (
+                {safetyLogistics.map((item, index) => (
                     <div key={item.id} style={{ marginBottom: '15px' }}>
-                        <h4 style={{ margin: '0 0 5px 0' }}>{item.title}</h4>
+                        <h4 style={{ margin: '0 0 5px 0', color: '#2c4f6b', fontSize: '14px', fontWeight: 'bold' }}>
+                            5.{index + 1} {item.title}
+                        </h4>
+                        
+                        {/* Display details for permits if provided */}
+                        {item.id === 'permits' && data.permitsDetails && (
+                            <div style={{ marginBottom: '10px', padding: '8px', backgroundColor: '#f0f8ff', borderLeft: '3px solid #2c4f6b' }}>
+                                <p style={{ margin: 0, fontSize: '12px', fontStyle: 'italic', color: '#2c4f6b' }}>
+                                    {data.permitsDetails}
+                                </p>
+                            </div>
+                        )}
+                        
                         {item.type === 'selectableList' && (
-                            <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '12px' }}>
-                                {item.items.filter(i => i.selected).map(i => <li key={i.id}>{i.name}</li>)}
+                            <ul style={{ 
+                                margin: 0, 
+                                paddingLeft: '25px', 
+                                fontSize: '12px',
+                                listStyleType: 'disc'
+                            }}>
+                                {item.items.filter(i => i.selected).map(i => (
+                                    <li key={i.id} style={{ 
+                                        marginBottom: '5px',
+                                        lineHeight: '1.4'
+                                    }}>
+                                        {i.name}
+                                    </li>
+                                ))}
                             </ul>
                         )}
                         {(item.type === 'booleanWithText' || item.type === 'textArea') && (
@@ -283,23 +362,55 @@ const PrintableDocument = ({ data, allTasks }) => {
             </Section>
 
             <Section title="6.0 Equipment">
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', fontSize: '12px' }}>
-                    <div>
-                        <h4 style={{ margin: '0 0 10px 0' }}>Personal Protective Equipment (PPE)</h4>
-                        <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                            {ppe.filter(i => i.selected).map(i => <li key={i.id}>{i.name}</li>)}
+                <div style={{ fontSize: '12px' }}>
+                    <div style={{ marginBottom: '30px' }}>
+                        <h4 style={{ margin: '0 0 10px 0', color: '#2c4f6b', fontSize: '14px', fontWeight: 'bold' }}>6.1 Personal Protective Equipment (PPE)</h4>
+                        
+                        {/* Display PPE details if provided */}
+                        {data.ppeDetails && (
+                            <div style={{ marginBottom: '10px', padding: '8px', backgroundColor: '#f0fff0', borderLeft: '3px solid #2c4f6b' }}>
+                                <p style={{ margin: 0, fontSize: '11px', fontStyle: 'italic', color: '#2c4f6b' }}>
+                                    {data.ppeDetails}
+                                </p>
+                            </div>
+                        )}
+                        
+                        <ul style={{ margin: 0, paddingLeft: '20px', listStyleType: 'disc' }}>
+                            {ppe.filter(i => i.selected).map(i => <li key={i.id} style={{ marginBottom: '5px' }}>{i.name}</li>)}
                         </ul>
                     </div>
-                    <div>
-                        <h4 style={{ margin: '0 0 10px 0' }}>Tools & Equipment</h4>
-                        <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                            {tools.filter(i => i.selected).map(i => <li key={i.id}>{i.name}</li>)}
+
+                    <div style={{ marginBottom: '30px' }}>
+                        <h4 style={{ margin: '0 0 10px 0', color: '#2c4f6b', fontSize: '14px', fontWeight: 'bold' }}>6.2 Tools & Equipment</h4>
+                        
+                        {/* Display Tools details if provided */}
+                        {data.toolsDetails && (
+                            <div style={{ marginBottom: '10px', padding: '8px', backgroundColor: '#fff8f0', borderLeft: '3px solid #2c4f6b' }}>
+                                <p style={{ margin: 0, fontSize: '11px', fontStyle: 'italic', color: '#2c4f6b' }}>
+                                    {data.toolsDetails}
+                                </p>
+                            </div>
+                        )}
+                        
+                        <ul style={{ margin: 0, paddingLeft: '20px', listStyleType: 'disc' }}>
+                            {tools.filter(i => i.selected).map(i => <li key={i.id} style={{ marginBottom: '5px' }}>{i.name}</li>)}
                         </ul>
                     </div>
+
                     <div>
-                        <h4 style={{ margin: '0 0 10px 0' }}>Materials</h4>
-                        <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                            {materials.filter(i => i.selected).map(i => <li key={i.id}>{i.name}</li>)}
+                        <h4 style={{ margin: '0 0 10px 0', color: '#2c4f6b', fontSize: '14px', fontWeight: 'bold' }}>6.3 Materials</h4>
+                        
+                        {/* Display Materials details if provided */}
+                        {data.materialsDetails && (
+                            <div style={{ marginBottom: '10px', padding: '8px', backgroundColor: '#faf0ff', borderLeft: '3px solid #2c4f6b' }}>
+                                <p style={{ margin: 0, fontSize: '11px', fontStyle: 'italic', color: '#2c4f6b' }}>
+                                    {data.materialsDetails}
+                                </p>
+                            </div>
+                        )}
+                        
+                        <ul style={{ margin: 0, paddingLeft: '20px', listStyleType: 'disc' }}>
+                            {materials.filter(i => i.selected).map(i => <li key={i.id} style={{ marginBottom: '5px' }}>{i.name}</li>)}
                         </ul>
                     </div>
                 </div>
@@ -324,6 +435,37 @@ const PrintableDocument = ({ data, allTasks }) => {
                     </div>
                 </div>
             </Section>
+
+            <style>{`
+                @media print {
+                    @page {
+                        size: A4;
+                        margin: 15mm;
+                    }
+                    body {
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+                    .page-break {
+                        page-break-before: always;
+                    }
+                    .no-page-break {
+                        page-break-inside: avoid;
+                    }
+                    h1, h2, h3, h4 {
+                        page-break-after: avoid;
+                    }
+                    table {
+                        page-break-inside: avoid;
+                    }
+                    ul, ol {
+                        page-break-inside: avoid;
+                    }
+                    li {
+                        page-break-inside: avoid;
+                    }
+                }
+            `}</style>
         </div>
     );
 };
