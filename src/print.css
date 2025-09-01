@@ -9,15 +9,28 @@
 }
 
 @media print {
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
     @page {
-        size: A4;
-        margin: 0;
+        size: A4 landscape;
+        margin: 1cm;
+    }
+
+    /* Force color printing */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
 
     html, body {
         margin: 0 !important;
         padding: 0 !important;
         background: white !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
 
     body {
@@ -37,6 +50,230 @@
         margin: 0 !important;
     }
 
+    /* Enhanced PDF table styling to match HTML exactly */
+    .risk-assessment-table {
+        table-layout: fixed !important;
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin-bottom: 20px !important;
+        page-break-inside: avoid !important;
+        border: 2px solid #000 !important;
+        font-family: 'Arial', sans-serif !important;
+    }
+
+    .risk-assessment-table th,
+    .risk-assessment-table td {
+        border: 1px solid #000 !important;
+        padding: 8px 10px !important;
+        font-size: 10pt !important;
+        line-height: 1.4 !important;
+        vertical-align: middle !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+        text-align: left !important;
+    }
+
+    /* Header styling to match HTML exactly */
+    .risk-assessment-table th {
+        background-color: #2c4f6b !important;
+        color: white !important;
+        font-weight: bold !important;
+        text-align: center !important;
+        vertical-align: middle !important;
+        font-size: 9pt !important;
+        padding: 10px 8px !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        white-space: normal !important;
+        word-wrap: break-word !important;
+    }
+
+    /* Risk assessment section headers */
+    .risk-assessment-table thead tr th {
+        background-color: #2c4f6b !important;
+        color: #ffffff !important;
+        border: 1px solid #000 !important;
+        font-weight: bold !important;
+        text-align: center !important;
+    }
+
+    /* Initial Risk Assessment Table - Aligned Column Widths */
+    .initial-risk-table th:nth-child(1),
+    .initial-risk-table td:nth-child(1) { 
+        width: 8% !important; 
+        text-align: center !important;
+        vertical-align: middle !important;
+    } /* Risk No */
+    
+    .initial-risk-table th:nth-child(2),
+    .initial-risk-table td:nth-child(2) { 
+        width: 20% !important; 
+        padding: 8px 12px !important;
+        vertical-align: middle !important;
+    } /* Hazard */
+    
+    .initial-risk-table th:nth-child(3),
+    .initial-risk-table td:nth-child(3) { 
+        width: 20% !important; 
+        padding: 8px 12px !important;
+        vertical-align: middle !important;
+    } /* Who/How */
+    
+    .initial-risk-table th:nth-child(4),
+    .initial-risk-table td:nth-child(4) { 
+        width: 13% !important; 
+        text-align: center !important;
+        vertical-align: middle !important;
+    } /* Initial Likelihood */
+    
+    .initial-risk-table th:nth-child(5),
+    .initial-risk-table td:nth-child(5) { 
+        width: 13% !important; 
+        text-align: center !important;
+        vertical-align: middle !important;
+    } /* Initial Severity */
+    
+    .initial-risk-table th:nth-child(6),
+    .initial-risk-table td:nth-child(6) { 
+        width: 13% !important; 
+        text-align: center !important;
+        font-weight: bold !important;
+        vertical-align: middle !important;
+    } /* Initial Risk Score */
+    
+    .initial-risk-table th:nth-child(7),
+    .initial-risk-table td:nth-child(7) { 
+        width: 13% !important; 
+        text-align: center !important;
+        font-weight: bold !important;
+        vertical-align: middle !important;
+    } /* Risk Level */
+
+    /* Controls & Residual Risk Table - Matching Column Widths */
+    .controls-risk-table th:nth-child(1),
+    .controls-risk-table td:nth-child(1) { 
+        width: 8% !important; 
+        text-align: center !important;
+        vertical-align: middle !important;
+    } /* Risk No - MATCHES initial table */
+    
+    .controls-risk-table th:nth-child(2),
+    .controls-risk-table td:nth-child(2) { 
+        width: 40% !important; 
+        padding: 8px 12px !important;
+        font-size: 9pt !important;
+        line-height: 1.3 !important;
+        vertical-align: middle !important;
+    } /* Controls - Combines Hazard + Who columns (20% + 20% = 40%) */
+    
+    .controls-risk-table th:nth-child(3),
+    .controls-risk-table td:nth-child(3) { 
+        width: 13% !important; 
+        text-align: center !important;
+        vertical-align: middle !important;
+    } /* Residual Likelihood - MATCHES initial likelihood */
+    
+    .controls-risk-table th:nth-child(4),
+    .controls-risk-table td:nth-child(4) { 
+        width: 13% !important; 
+        text-align: center !important;
+        vertical-align: middle !important;
+    } /* Residual Severity - MATCHES initial severity */
+    
+    .controls-risk-table th:nth-child(5),
+    .controls-risk-table td:nth-child(5) { 
+        width: 13% !important; 
+        text-align: center !important;
+        font-weight: bold !important;
+        vertical-align: middle !important;
+    } /* Residual Risk Score - MATCHES initial risk score */
+    
+    .controls-risk-table th:nth-child(6),
+    .controls-risk-table td:nth-child(6) { 
+        width: 13% !important; 
+        text-align: center !important;
+        font-weight: bold !important;
+        vertical-align: middle !important;
+    } /* Risk Level - MATCHES initial risk level */
+
+    /* Enhanced Risk Level Colors for PDF - 5-Level System */
+    .risk-level-very-low,
+    .risk-assessment-table td[style*="#00ff00"] {
+        background-color: #00ff00 !important;
+        color: #000 !important;
+        font-weight: bold !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .risk-level-low,
+    .risk-assessment-table td[style*="#90EE90"] {
+        background-color: #90EE90 !important;
+        color: #000 !important;
+        font-weight: bold !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .risk-level-medium,
+    .risk-assessment-table td[style*="#ffff00"] {
+        background-color: #ffff00 !important;
+        color: #000 !important;
+        font-weight: bold !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .risk-level-high,
+    .risk-assessment-table td[style*="#ff9900"] {
+        background-color: #ff9900 !important;
+        color: #000 !important;
+        font-weight: bold !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .risk-level-very-high,
+    .risk-assessment-table td[style*="#ff0000"] {
+        background-color: #ff0000 !important;
+        color: #fff !important;
+        font-weight: bold !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Force color preservation for all risk cells */
+    .risk-assessment-table td[style*="background"] {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Better text rendering in PDF */
+    .risk-assessment-table td {
+        font-size: 9pt !important;
+        line-height: 1.3 !important;
+    }
+
+    /* Controls column specific styling */
+    .controls-cell {
+        font-size: 9pt !important;
+        line-height: 1.4 !important;
+        padding: 10px 12px !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+    }
+
+    /* Page Break Controls for PDF */
+    .page-break {
+        page-break-before: always !important;
+        break-before: page !important;
+    }
+
+    .avoid-page-break {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
     /* Hide all non-printable content */
     .print\:hidden,
     .print-hidden,
@@ -46,7 +283,14 @@
     }
 
     /* Show only the printable document */
-    .printable-document { width: var(--page-width) !important; margin:0 auto !important; }
+    .printable-document { 
+        width: 700px !important; 
+        max-width: none !important;
+        margin: 0 auto !important; 
+        padding: 15px !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
 
     /* Typography */
     h1, h2, h3, h4 {
@@ -99,17 +343,192 @@
     }
 
     th, td {
-        border: 1px solid #ddd !important;
+        border: 1px solid #000 !important; /* Crisp black grid like screenshot */
         vertical-align: middle !important;
     }
 
-    /* Preserve inline styles for Risk Assessment table headers */
-    th {
+    /* Generic headers (non-risk table) keep prior styling but lighter border already overridden */
+    table:not(.risk-table) th {
         background-color: #2c4f6b !important;
-        color: white !important;
-        font-size: 10px !important;
-        height: 50px !important;
+        color: #fff !important;
+        font-size: 11px !important;
+        text-align: left !important;
+        padding: 6px 8px !important;
+    }
+
+    /* Page break controls for better document flow */
+    .page-break {
+        page-break-before: always !important;
+        break-before: page !important;
+    }
+
+    .page-break-after {
+        page-break-after: always !important;
+        break-after: page !important;
+    }
+
+    .avoid-page-break {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    /* Section-specific page breaks */
+    .toc-section {
+        page-break-after: always !important;
+        break-after: page !important;
+    }
+
+    .project-details-section {
+        page-break-after: always !important;
+        break-after: page !important;
+    }
+
+    .method-statement-section {
+        page-break-after: always !important;
+        break-after: page !important;
+    }
+
+    .risk-assessment-section {
+        page-break-before: always !important;
+        break-before: page !important;
+    }
+
+    .risk-summary-section {
+        page-break-before: always !important;
+        break-before: page !important;
+    }
+
+    .approval-section {
+        page-break-before: always !important;
+        break-before: page !important;
+    }
+
+    /* Enhanced page break controls */
+    .risk-table {
+        width: 100% !important;
+        table-layout: fixed !important;
+        border-collapse: collapse !important;
+        font-family: Arial, sans-serif !important;
+        font-size: 11px !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        margin-bottom: 15px !important;
+    }
+
+    /* Ensure section breaks */
+    h2 {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    /* Keep risk assessment sections together */
+    .risk-table + h4 {
+        page-break-before: avoid !important;
+        break-before: avoid !important;
+    }
+
+    /* Signature table formatting */
+    .approval-table {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    /* Risk summary dashboard */
+    .risk-summary-grid {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+    
+    .risk-table th {
+        background-color: #004459 !important; 
+        color: #ffffff !important;
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        line-height: 1.2 !important;
+        padding: 8px 6px !important;
         text-align: center !important;
+        height: auto !important;
+        border: 1px solid #000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        white-space: normal !important;
+        vertical-align: middle !important;
+    }
+
+    .risk-table td {
+        background-color: #ffffff !important;
+        font-size: 11px !important;
+        padding: 6px 4px !important;
+        border: 1px solid #000 !important;
+        vertical-align: top !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+        line-height: 1.3 !important;
+    }
+
+    /* Section headings for the split tables */
+    h4 {
+        font-size: 14px !important;
+        color: #004459 !important;
+        margin-bottom: 8px !important;
+        margin-top: 15px !important;
+        font-weight: 600 !important;
+    }
+
+    /* Ensure specific columns are centered with higher specificity */
+    .risk-table td:nth-child(1),
+    .risk-table td:nth-child(4), 
+    .risk-table td:nth-child(8) {
+        text-align: center !important;
+    }
+
+    /* Narrow numeric columns center aligned */
+    .risk-table td:nth-child(4),
+    .risk-table td:nth-child(5),
+    .risk-table td:nth-child(6),
+    .risk-table td:nth-child(8),
+    .risk-table td:nth-child(9),
+    .risk-table td:nth-child(10),
+    .risk-table td:first-child {
+        text-align: center !important;
+        font-weight: 400 !important; /* ensure only risk score cells bold */
+    }
+
+    /* Bold only calculated risk cells (Initial Risk, Residual Risk) */
+    .risk-table td:nth-child(6),
+    .risk-table td:nth-child(10) {
+        font-weight: 700 !important;
+    }
+
+    /* Override inline vivid risk colors to ensure full-bleed color and readable text */
+    .risk-table td[style*="background-color: #ffff00"],
+    .risk-table td[style*="background-color: #ff9900"],
+    .risk-table td[style*="background-color: #ff0000"],
+    .risk-table td[style*="background-color: #00ff00"] {
+        color: #000 !important;
+        font-weight: 700 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    .risk-table td[style*="background-color: #ff0000"] { 
+        color: #fff !important; 
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Force all risk cells to preserve their background colors */
+    .risk-table td {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        background-color: white !important;
+    }
+
+    /* Specific risk color preservation */
+    .risk-table td[style*="background-color"] {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
@@ -119,36 +538,8 @@
         padding: inherit !important;
     }
 
-    /* Preserve rotated header styles */
-    th[style*="writing-mode"] {
-        writing-mode: inherit !important;
-        transform: inherit !important;
-        text-align: center !important;
-        vertical-align: middle !important;
-        white-space: nowrap !important;
-    }
-
-    /* Rotate only the text spans in rotated headers for print */
-    th span[style*="writing-mode"] {
-        writing-mode: inherit !important;
-        text-align: center !important;
-        white-space: nowrap !important;
-        display: inline-block !important;
-        position: absolute !important;
-        top: 50% !important;
-        left: 50% !important;
-        transform-origin: center center !important;
-        transform: translate(-50%, -50%) rotate(-90deg) !important;
-        line-height: 1.2 !important;
-        width: auto !important;
-        height: auto !important;
-    }
-
-    /* Make specific rotated header cells taller */
-    th[style*="height: 60px"] {
-        height: 60px !important;
-        position: relative !important;
-    }
+    /* Remove legacy rotated header rules (no longer needed) */
+    /* Legacy rotated header selectors intentionally left unused (rules removed). */
 
     /* Ensure risk cell colors are preserved in print */
     td {

@@ -3,11 +3,31 @@ import riskEvaluationMatrix from '../assets/risk-evaluation-matrix.png';
 import uctelLogo from '../assets/uctel-logo.png';
 
 const getRiskColor = (score) => {
-    if (score >= 20) return '#ef5350'; // Red
-    if (score >= 15) return '#ffa726'; // Orange
-    if (score >= 8) return '#ffca28'; // Yellow
-    if (score >= 1) return '#66bb6a'; // Green
+    // Risk matrix colors based on 5-level standard risk evaluation matrix
+    if (score >= 20) return '#ff0000'; // Red - Very High (20-25)
+    if (score >= 15) return '#ff9900'; // Orange - High (15-16)
+    if (score >= 8) return '#ffff00';  // Yellow - Medium (8-12)
+    if (score >= 3) return '#90EE90';  // Light Green - Low (3-6)
+    if (score >= 1) return '#00ff00';  // Bright Green - Very Low (1-2)
     return 'transparent';
+};
+
+const getRiskLevelClass = (score) => {
+    if (score >= 20) return 'risk-level-very-high';
+    if (score >= 15) return 'risk-level-high';
+    if (score >= 8) return 'risk-level-medium';
+    if (score >= 3) return 'risk-level-low';
+    if (score >= 1) return 'risk-level-very-low';
+    return '';
+};
+
+const getRiskLevelText = (score) => {
+    if (score >= 20) return 'VERY HIGH';
+    if (score >= 15) return 'HIGH';
+    if (score >= 8) return 'MEDIUM';
+    if (score >= 3) return 'LOW';
+    if (score >= 1) return 'VERY LOW';
+    return 'NONE';
 };
 
 const Section = ({ title, children }) => (
@@ -20,9 +40,29 @@ const Section = ({ title, children }) => (
 );
 
 const DetailItem = ({ label, value }) => (
-    <div style={{ marginBottom: '10px' }}>
-        <p style={{ margin: 0, fontSize: '10px', color: '#555', fontWeight: 'bold' }}>{label}</p>
-        <p style={{ margin: 0, fontSize: '12px' }}>{value}</p>
+    <div style={{ marginBottom: '15px' }}>
+        <div style={{ 
+            fontSize: '10px', 
+            fontWeight: 'bold', 
+            color: '#495057', 
+            marginBottom: '6px',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px'
+        }}>
+            {label}
+        </div>
+        <div style={{ 
+            fontSize: '12px',
+            color: '#212529',
+            padding: '8px 12px',
+            backgroundColor: '#fff',
+            border: '1px solid #ced4da',
+            borderRadius: '4px',
+            lineHeight: '1.4',
+            minHeight: '16px'
+        }}>
+            {value || 'Not specified'}
+        </div>
     </div>
 );
 
@@ -54,39 +94,32 @@ const PrintableDocument = ({ data, allTasks }) => {
     const enabledTasks = selectedTasks.filter(task => task.enabled);
 
     const tableHeaderStyle = {
-        backgroundColor: '#2c4f6b',
-        color: 'white',
-        padding: '8px',
-        fontSize: '10px',
-        textAlign: 'left', // Align all header text to the left for consistency
-        border: '1px solid #ddd',
+        backgroundColor: '#004a63', // darker blue like screenshot
+        color: '#ffffff',
+        padding: '8px 6px',
+        fontSize: '11px',
+        textAlign: 'center',
+        border: '1px solid #000',
         verticalAlign: 'middle',
-        height: '50px', // Set a fixed height to ensure room for rotated/stacked text in PDF
+        fontWeight: 'bold'
     };
 
-    const rotatedHeaderStyle = {
+    // Risk table specific styles (separate from generic tableHeaderStyle if needed later)
+    const riskHeaderTextStyle = {
         ...tableHeaderStyle,
-        writingMode: 'vertical-rl',
         textAlign: 'center',
-        transform: 'rotate(180deg)', // Flips the vertical text to read bottom-to-top
-    };
-
-    const rotatedTextStyle = {
-        writingMode: 'vertical-rl',
-        textAlign: 'center',
-        transform: 'rotate(180deg)',
-        display: 'inline-block',
-        whiteSpace: 'nowrap',
-        lineHeight: '1.2',
+        fontWeight: 'bold',
+        backgroundColor: '#0a4f69', // deeper teal like screenshot
+        border: '1px solid #000'
     };
 
     const cellStyle = {
-        padding: '8px',
-        fontSize: '10px',
-        border: '1px solid #ddd',
+        padding: '8px 6px',
+        fontSize: '11px',
+        border: '1px solid #000',
         textAlign: 'left',
         verticalAlign: 'middle',
-        // REMOVED: wordBreak: 'break-word',
+        backgroundColor: 'white'
     };
 
     const riskCell = (score) => ({
@@ -94,11 +127,12 @@ const PrintableDocument = ({ data, allTasks }) => {
         backgroundColor: getRiskColor(score),
         fontWeight: 'bold',
         textAlign: 'center',
-        color: score > 12 ? 'white' : 'black',
+        // Only use white text on the deepest red; orange/yellow/green remain black like screenshot
+        color: score >= 20 ? 'white' : 'black',
     });
 
     return (
-        <div style={{ fontFamily: 'Arial, sans-serif', color: '#333', padding: '40px', backgroundColor: 'white' }}>
+        <div className="printable-document" style={{ fontFamily: 'Arial, sans-serif', color: '#333', padding: '15px', backgroundColor: 'white', maxWidth: 'none', width: '700px', margin: '0 auto' }}>
             <header style={{ 
                 display: 'flex',
                 flexDirection: 'column',
@@ -128,54 +162,123 @@ const PrintableDocument = ({ data, allTasks }) => {
                 </h1>
             </header>
 
-            {/* Table of Contents */}
-            <Section title="Table of Contents">
-                <div style={{ fontSize: '12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                        <span>1.0 Project Details</span>
-                        <span>2</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                        <span>2.0 Project Team</span>
-                        <span>3</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                        <span>3.0 Method Statement (Sequence of Works)</span>
-                        <span>4</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                        <span>4.0 Risk Assessments</span>
-                        <span>5</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                        <span>5.0 Safety & Logistics</span>
-                        <span>6</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                        <span>6.0 Equipment</span>
-                        <span>7</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                        <span>7.0 Approval & Sign-Off</span>
-                        <span>8</span>
+            {/* Enhanced Table of Contents */}
+            <Section title="Table of Contents" className="toc-section">
+                <div style={{ 
+                    padding: '15px', 
+                    border: '2px solid #2c4f6b', 
+                    borderRadius: '8px',
+                    backgroundColor: '#f8f9fa'
+                }}>
+                    <div style={{ fontSize: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', padding: '4px 0', borderBottom: '1px dotted #ccc' }}>
+                            <span style={{ fontWeight: 'bold' }}>1.0 Project Details</span>
+                            <span style={{ fontWeight: 'bold' }}>Page 1</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', padding: '4px 0', borderBottom: '1px dotted #ccc' }}>
+                            <span style={{ fontWeight: 'bold' }}>2.0 Project Team</span>
+                            <span style={{ fontWeight: 'bold' }}>Page 1</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', padding: '4px 0', borderBottom: '1px dotted #ccc' }}>
+                            <span style={{ fontWeight: 'bold' }}>3.0 Method Statement (Sequence of Works)</span>
+                            <span style={{ fontWeight: 'bold' }}>Page 2</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', padding: '4px 0', borderBottom: '1px dotted #ccc' }}>
+                            <span style={{ fontWeight: 'bold' }}>4.0 Risk Assessments</span>
+                            <span style={{ fontWeight: 'bold' }}>Page 3</span>
+                        </div>
+                        {Object.entries(risks).map(([key, riskCategory], index) => (
+                            <div key={key} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', padding: '3px 0 3px 20px', borderBottom: '1px dotted #eee' }}>
+                                <span>4.{index + 1} {riskCategory.title}</span>
+                                <span>Page {3 + Math.floor(index/2)}</span>
+                            </div>
+                        ))}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', padding: '4px 0', borderBottom: '1px dotted #ccc' }}>
+                            <span style={{ fontWeight: 'bold' }}>5.0 Safety & Logistics</span>
+                            <span style={{ fontWeight: 'bold' }}>Page {4 + Math.floor(Object.keys(risks).length/2)}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', padding: '4px 0', borderBottom: '1px dotted #ccc' }}>
+                            <span style={{ fontWeight: 'bold' }}>6.0 Equipment</span>
+                            <span style={{ fontWeight: 'bold' }}>Page {5 + Math.floor(Object.keys(risks).length/2)}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', padding: '4px 0', borderBottom: '1px dotted #ccc' }}>
+                            <span style={{ fontWeight: 'bold' }}>7.0 Risk Summary & Approval</span>
+                            <span style={{ fontWeight: 'bold' }}>Page {6 + Math.floor(Object.keys(risks).length/2)}</span>
+                        </div>
                     </div>
                 </div>
             </Section>
 
+            {/* Page Break */}
+            <div className="page-break"></div>
+
             <Section title="1.0 Project Details">
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                    <div>
-                        <DetailItem label="Client" value={client} />
-                        <DetailItem label="Site Address" value={siteAddress} />
-                        <DetailItem label="Project Description" value={projectDescription} />
+                <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: '1fr 1fr', 
+                    gap: '25px',
+                    marginBottom: '15px'
+                }}>
+                    {/* Left Column */}
+                    <div style={{ 
+                        padding: '20px', 
+                        backgroundColor: '#f8f9fa', 
+                        border: '1px solid #e9ecef', 
+                        borderRadius: '8px',
+                        borderLeft: '4px solid #2c4f6b'
+                    }}>
+                        <h4 style={{ color: '#2c4f6b', marginBottom: '15px', fontSize: '14px', fontWeight: 'bold' }}>
+                            Client & Location
+                        </h4>
+                        <div style={{ marginBottom: '15px' }}>
+                            <DetailItem label="Client" value={client} />
+                        </div>
+                        <div style={{ marginBottom: '15px' }}>
+                            <DetailItem label="Site Address" value={siteAddress} />
+                        </div>
+                        <div>
+                            <DetailItem label="Project Description" value={projectDescription} />
+                        </div>
                     </div>
-                    <div>
-                        <DetailItem label="Commencement Date" value={commencementDate} />
-                        <DetailItem label="Estimated Completion Date" value={estimatedCompletionDate} />
-                        <DetailItem label="Prepared By" value={`${preparedBy} | ${preparedByEmail} | ${preparedByPhone}`} />
-                        <DetailItem label="Document Creation Date" value={documentCreationDate} />
-                        <DetailItem label="Revision Number" value={revisionNumber} />
+                    
+                    {/* Right Column */}
+                    <div style={{ 
+                        padding: '20px', 
+                        backgroundColor: '#f8f9fa', 
+                        border: '1px solid #e9ecef', 
+                        borderRadius: '8px',
+                        borderLeft: '4px solid #28a745'
+                    }}>
+                        <h4 style={{ color: '#2c4f6b', marginBottom: '15px', fontSize: '14px', fontWeight: 'bold' }}>
+                            Timeline & Documentation
+                        </h4>
+                        <div style={{ marginBottom: '15px' }}>
+                            <DetailItem label="Commencement Date" value={commencementDate} />
+                        </div>
+                        <div style={{ marginBottom: '15px' }}>
+                            <DetailItem label="Estimated Completion Date" value={estimatedCompletionDate} />
+                        </div>
+                        <div style={{ marginBottom: '15px' }}>
+                            <DetailItem label="Document Creation Date" value={documentCreationDate} />
+                        </div>
+                        <div>
+                            <DetailItem label="Revision Number" value={revisionNumber} />
+                        </div>
                     </div>
+                </div>
+                
+                {/* Full Width Prepared By Section */}
+                <div style={{ 
+                    padding: '20px', 
+                    backgroundColor: '#fff3cd', 
+                    border: '1px solid #ffc107', 
+                    borderRadius: '8px',
+                    borderLeft: '4px solid #ffc107'
+                }}>
+                    <h4 style={{ color: '#2c4f6b', marginBottom: '10px', fontSize: '14px', fontWeight: 'bold' }}>
+                        Document Prepared By
+                    </h4>
+                    <DetailItem label="Contact Information" value={`${preparedBy} | ${preparedByEmail} | ${preparedByPhone}`} />
                 </div>
             </Section>
 
@@ -202,6 +305,9 @@ const PrintableDocument = ({ data, allTasks }) => {
                 </table>
             </Section>
 
+            {/* Page Break */}
+            <div className="page-break"></div>
+
             <Section title="3.0 Method Statement (Sequence of Works)">
                 <div style={{ fontSize: '12px' }}>
                     {enabledTasks.map((task, index) => (
@@ -225,94 +331,121 @@ const PrintableDocument = ({ data, allTasks }) => {
                 </div>
             </Section>
 
+            {/* Page Break */}
+            <div className="page-break"></div>
+
             <Section title="4.0 Risk Assessments">
-                {Object.entries(risks).map(([key, riskCategory]) => (
-                    <div key={key} style={{ pageBreakInside: 'avoid', marginBottom: '40px' }}>
-                        <h3 style={{ color: '#2c4f6b', marginBottom: '15px' }}>{riskCategory.title}</h3>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #ddd', tableLayout: 'fixed' }}>
+                {Object.entries(risks).map(([key, riskCategory], categoryIndex) => (
+                    <div key={key}>
+                        {/* Page break before each risk category (except the first) */}
+                        {categoryIndex > 0 && <div className="page-break"></div>}
+                        
+                        <div style={{ pageBreakInside: 'avoid', marginBottom: '40px' }}>
+                            <h4 style={{ margin: '0 0 15px 0', color: '#2c4f6b', fontSize: '14px', fontWeight: 'bold' }}>
+                                4.{categoryIndex + 1} {riskCategory.title}
+                            </h4>
+                        
+                        {/* Initial Risk Assessment Table */}
+                        <h4 style={{ color: '#004459', marginBottom: '10px', fontSize: '14px' }}>Initial Risk Assessment</h4>
+                        <table className="risk-assessment-table initial-risk-table" style={{ 
+                            width: '100%', 
+                            borderCollapse: 'collapse', 
+                            border: '1px solid #000', 
+                            tableLayout: 'fixed',
+                            marginBottom: '20px'
+                        }}>
                             <thead>
                                 <tr>
-                                    {/* Using stacked text for narrow columns */}
-                                    <th style={{...tableHeaderStyle, width: '6%', textAlign: 'center'}}>Risk<br/>No.</th>
-                                    <th style={{...tableHeaderStyle, width: '15%'}}>Hazard</th>
-                                    <th style={{...tableHeaderStyle, width: '17%'}}>Who/How Harmed</th>
-                                    
-                                    {/* Use flexbox for robust centering in PDF */}
-                                    <th style={{...tableHeaderStyle, width: '6%'}}>
-                                        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'}}>
-                                            <span>Initial</span>
-                                            <span>Li</span>
-                                        </div>
-                                    </th>
-                                    <th style={{...tableHeaderStyle, width: '6%'}}>
-                                        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'}}>
-                                            <span>Initial</span>
-                                            <span>Si</span>
-                                        </div>
-                                    </th>
-                                    <th style={{...tableHeaderStyle, width: '6%'}}>
-                                        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'}}>
-                                            <span>Initial</span>
-                                            <span>Risk</span>
-                                        </div>
-                                    </th>
-
-                                    <th style={{...tableHeaderStyle, width: '26%'}}>Controls</th>
-                                    <th style={{...tableHeaderStyle, width: '6%', height: '60px'}}>
-                                        <span style={{...rotatedTextStyle}}>
-                                            Residual<br/>Lr
-                                        </span>
-                                    </th>
-                                    <th style={{...tableHeaderStyle, width: '6%', height: '60px'}}>
-                                        <span style={{...rotatedTextStyle}}>
-                                            Residual<br/>Sr
-                                        </span>
-                                    </th>
-                                    <th style={{...tableHeaderStyle, width: '6%', height: '60px'}}>
-                                        <span style={{...rotatedTextStyle}}>
-                                            Residual<br/>Risk
-                                        </span>
-                                    </th>
+                                    <th style={{...tableHeaderStyle, width: '8%'}}>Risk No.</th>
+                                    <th style={{...tableHeaderStyle, width: '25%'}}>Hazard</th>
+                                    <th style={{...tableHeaderStyle, width: '25%'}}>Who Can Be Harmed/How?</th>
+                                    <th style={{...tableHeaderStyle, width: '10%'}}>Initial<br/>Likelihood</th>
+                                    <th style={{...tableHeaderStyle, width: '10%'}}>Initial<br/>Severity</th>
+                                    <th style={{...tableHeaderStyle, width: '10%'}}>Initial<br/>Risk Score</th>
+                                    <th style={{...tableHeaderStyle, width: '12%'}}>Risk Level</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {riskCategory.hazards.filter(h => h.selected).map((hazard, index) => {
                                     const initialRisk = (hazard.initialLikelihood || 0) * (hazard.initialSeverity || 0);
-                                    const residualRisk = (hazard.residualLikelihood || 0) * (hazard.residualSeverity || 0);
                                     return (
-                                        <tr key={hazard.id}>
-                                            <td style={{...cellStyle, textAlign: 'center'}}>{index + 1}</td>
-                                            
+                                        <tr key={`initial-${hazard.id}`}>
+                                            <td style={{...cellStyle, textAlign: 'center', fontWeight: 'bold'}}>{index + 1}</td>
                                             <td style={cellStyle}>{hazard.hazard}</td>
                                             <td style={cellStyle}>{hazard.who}</td>
-                                            
-                                            {/* Use flexbox for robust centering in PDF */}
-                                            <td style={cellStyle}>
-                                                <div style={{display: 'flex', justifyContent: 'center'}}>{hazard.initialLikelihood}</div>
-                                            </td>
-                                            <td style={cellStyle}>
-                                                <div style={{display: 'flex', justifyContent: 'center'}}>{hazard.initialSeverity}</div>
-                                            </td>
-                                            {/* Apply flexbox centering to risk cells */}
-                                            <td style={riskCell(initialRisk)}>
-                                                <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%'}}>{initialRisk}</div>
-                                            </td>
-                                            <td style={cellStyle}>{hazard.controls}</td>
-                                            <td style={cellStyle}>
-                                                <div style={{display: 'flex', justifyContent: 'center'}}>{hazard.residualLikelihood}</div>
-                                            </td>
-                                            <td style={cellStyle}>
-                                                <div style={{display: 'flex', justifyContent: 'center'}}>{hazard.residualSeverity}</div>
-                                            </td>
-                                            {/* Apply flexbox centering to risk cells */}
-                                            <td style={riskCell(residualRisk)}>
-                                                <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%'}}>{residualRisk}</div>
+                                            <td style={{...cellStyle, textAlign: 'center'}}>{hazard.initialLikelihood || 0}</td>
+                                            <td style={{...cellStyle, textAlign: 'center'}}>{hazard.initialSeverity || 0}</td>
+                                            <td className={getRiskLevelClass(initialRisk)} style={{
+                                                ...cellStyle, 
+                                                textAlign: 'center', 
+                                                fontWeight: 'bold',
+                                                backgroundColor: getRiskColor(initialRisk),
+                                                color: initialRisk >= 15 ? 'white' : 'black'
+                                            }}>{initialRisk}</td>
+                                            <td className={getRiskLevelClass(initialRisk)} style={{
+                                                ...cellStyle, 
+                                                textAlign: 'center',
+                                                backgroundColor: getRiskColor(initialRisk),
+                                                color: initialRisk >= 15 ? 'white' : 'black',
+                                                fontWeight: 'bold'
+                                            }}>
+                                                {getRiskLevelText(initialRisk)}
                                             </td>
                                         </tr>
                                     );
                                 })}
                             </tbody>
                         </table>
+
+                        {/* Controls and Residual Risk Assessment Table */}
+                        <h4 style={{ color: '#004459', marginBottom: '10px', fontSize: '14px' }}>Controls & Residual Risk Assessment</h4>
+                        <table className="risk-assessment-table controls-risk-table" style={{ 
+                            width: '100%', 
+                            borderCollapse: 'collapse', 
+                            border: '1px solid #000', 
+                            tableLayout: 'fixed'
+                        }}>
+                            <thead>
+                                <tr>
+                                    <th style={{...tableHeaderStyle, width: '8%'}}>Risk No.</th>
+                                    <th style={{...tableHeaderStyle, width: '50%'}}>Controls in Place</th>
+                                    <th style={{...tableHeaderStyle, width: '10%'}}>Residual<br/>Likelihood</th>
+                                    <th style={{...tableHeaderStyle, width: '10%'}}>Residual<br/>Severity</th>
+                                    <th style={{...tableHeaderStyle, width: '10%'}}>Residual<br/>Risk Score</th>
+                                    <th style={{...tableHeaderStyle, width: '12%'}}>Risk Level</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {riskCategory.hazards.filter(h => h.selected).map((hazard, index) => {
+                                    const residualRisk = (hazard.residualLikelihood || 0) * (hazard.residualSeverity || 0);
+                                    return (
+                                        <tr key={`residual-${hazard.id}`}>
+                                            <td style={{...cellStyle, textAlign: 'center', fontWeight: 'bold'}}>{index + 1}</td>
+                                            <td className="controls-cell" style={cellStyle}>{hazard.controls}</td>
+                                            <td style={{...cellStyle, textAlign: 'center'}}>{hazard.residualLikelihood || 0}</td>
+                                            <td style={{...cellStyle, textAlign: 'center'}}>{hazard.residualSeverity || 0}</td>
+                                            <td className={getRiskLevelClass(residualRisk)} style={{
+                                                ...cellStyle, 
+                                                textAlign: 'center', 
+                                                fontWeight: 'bold',
+                                                backgroundColor: getRiskColor(residualRisk),
+                                                color: residualRisk >= 15 ? 'white' : 'black'
+                                            }}>{residualRisk}</td>
+                                            <td className={getRiskLevelClass(residualRisk)} style={{
+                                                ...cellStyle, 
+                                                textAlign: 'center',
+                                                backgroundColor: getRiskColor(residualRisk),
+                                                color: residualRisk >= 15 ? 'white' : 'black',
+                                                fontWeight: 'bold'
+                                            }}>
+                                                {getRiskLevelText(residualRisk)}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                        </div>
                     </div>
                 ))}
                 {/* Force image size with a container */}
@@ -320,6 +453,9 @@ const PrintableDocument = ({ data, allTasks }) => {
                     <img src={riskEvaluationMatrix} alt="Risk Evaluation Matrix" style={{ width: '100%', height: 'auto', display: 'block' }} />
                 </div>
             </Section>
+
+            {/* Page Break */}
+            <div className="page-break"></div>
 
             <Section title="5.0 Safety & Logistics">
                 {safetyLogistics.map((item, index) => (
@@ -360,6 +496,9 @@ const PrintableDocument = ({ data, allTasks }) => {
                     </div>
                 ))}
             </Section>
+
+            {/* Page Break */}
+            <div className="page-break"></div>
 
             <Section title="6.0 Equipment">
                 <div style={{ fontSize: '12px' }}>
@@ -416,23 +555,227 @@ const PrintableDocument = ({ data, allTasks }) => {
                 </div>
             </Section>
 
-            <Section title="7.0 Approval & Sign-Off">
-                <p style={{ fontSize: '12px', fontStyle: 'italic' }}>
-                    I confirm that I have read and understood the contents of this Risk Assessment and Method Statement. I agree to comply with all specified safety procedures and control measures.
-                </p>
+            {/* Page Break */}
+            <div className="page-break"></div>
+
+            <Section title="7.0 Risk Summary & Analysis">
+                {(() => {
+                    // Calculate risk statistics
+                    const allHazards = Object.values(risks).flatMap(category => 
+                        category.hazards.filter(h => h.selected)
+                    );
+                    
+                    const initialRisks = allHazards.map(h => (h.initialLikelihood || 0) * (h.initialSeverity || 0));
+                    const residualRisks = allHazards.map(h => (h.residualLikelihood || 0) * (h.residualSeverity || 0));
+                    
+                    const riskCounts = {
+                        initial: {
+                            veryHigh: initialRisks.filter(r => r >= 20).length,
+                            high: initialRisks.filter(r => r >= 15 && r < 20).length,
+                            medium: initialRisks.filter(r => r >= 8 && r < 15).length,
+                            low: initialRisks.filter(r => r >= 3 && r < 8).length,
+                            veryLow: initialRisks.filter(r => r >= 1 && r < 3).length
+                        },
+                        residual: {
+                            veryHigh: residualRisks.filter(r => r >= 20).length,
+                            high: residualRisks.filter(r => r >= 15 && r < 20).length,
+                            medium: residualRisks.filter(r => r >= 8 && r < 15).length,
+                            low: residualRisks.filter(r => r >= 3 && r < 8).length,
+                            veryLow: residualRisks.filter(r => r >= 1 && r < 3).length
+                        }
+                    };
+
+                    const highestInitialRisk = Math.max(...initialRisks, 0);
+                    const highestResidualRisk = Math.max(...residualRisks, 0);
+                    const averageReduction = initialRisks.length > 0 ? 
+                        ((initialRisks.reduce((a, b) => a + b, 0) - residualRisks.reduce((a, b) => a + b, 0)) / initialRisks.length).toFixed(1) : 0;
+
+                    return (
+                        <div>
+                            {/* Risk Statistics Dashboard */}
+                            <div style={{ 
+                                display: 'grid', 
+                                gridTemplateColumns: '1fr 1fr', 
+                                gap: '20px', 
+                                marginBottom: '30px',
+                                padding: '20px',
+                                backgroundColor: '#f8f9fa',
+                                border: '2px solid #2c4f6b',
+                                borderRadius: '8px'
+                            }}>
+                                <div>
+                                    <h4 style={{ color: '#2c4f6b', marginBottom: '15px', textAlign: 'center' }}>Initial Risk Profile</h4>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', fontSize: '10px' }}>
+                                        <div style={{ padding: '6px', backgroundColor: '#ff0000', color: 'white', textAlign: 'center', borderRadius: '4px' }}>
+                                            <strong>VERY HIGH: {riskCounts.initial.veryHigh}</strong>
+                                        </div>
+                                        <div style={{ padding: '6px', backgroundColor: '#ff9900', color: 'black', textAlign: 'center', borderRadius: '4px' }}>
+                                            <strong>HIGH: {riskCounts.initial.high}</strong>
+                                        </div>
+                                        <div style={{ padding: '6px', backgroundColor: '#ffff00', color: 'black', textAlign: 'center', borderRadius: '4px' }}>
+                                            <strong>MEDIUM: {riskCounts.initial.medium}</strong>
+                                        </div>
+                                        <div style={{ padding: '6px', backgroundColor: '#90EE90', color: 'black', textAlign: 'center', borderRadius: '4px' }}>
+                                            <strong>LOW: {riskCounts.initial.low}</strong>
+                                        </div>
+                                        <div style={{ padding: '6px', backgroundColor: '#00ff00', color: 'black', textAlign: 'center', borderRadius: '4px' }}>
+                                            <strong>VERY LOW: {riskCounts.initial.veryLow}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <h4 style={{ color: '#2c4f6b', marginBottom: '15px', textAlign: 'center' }}>Residual Risk Profile</h4>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', fontSize: '10px' }}>
+                                        <div style={{ padding: '6px', backgroundColor: '#ff0000', color: 'white', textAlign: 'center', borderRadius: '4px' }}>
+                                            <strong>VERY HIGH: {riskCounts.residual.veryHigh}</strong>
+                                        </div>
+                                        <div style={{ padding: '6px', backgroundColor: '#ff9900', color: 'black', textAlign: 'center', borderRadius: '4px' }}>
+                                            <strong>HIGH: {riskCounts.residual.high}</strong>
+                                        </div>
+                                        <div style={{ padding: '6px', backgroundColor: '#ffff00', color: 'black', textAlign: 'center', borderRadius: '4px' }}>
+                                            <strong>MEDIUM: {riskCounts.residual.medium}</strong>
+                                        </div>
+                                        <div style={{ padding: '6px', backgroundColor: '#90EE90', color: 'black', textAlign: 'center', borderRadius: '4px' }}>
+                                            <strong>LOW: {riskCounts.residual.low}</strong>
+                                        </div>
+                                        <div style={{ padding: '6px', backgroundColor: '#00ff00', color: 'black', textAlign: 'center', borderRadius: '4px' }}>
+                                            <strong>VERY LOW: {riskCounts.residual.veryLow}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Risk Summary Table */}
+                            <h4 style={{ color: '#2c4f6b', marginBottom: '15px' }}>Risk Summary Overview</h4>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #000', marginBottom: '20px' }}>
+                                <thead>
+                                    <tr>
+                                        <th style={{...tableHeaderStyle, width: '30%'}}>Risk Category</th>
+                                        <th style={{...tableHeaderStyle, width: '15%'}}>Total Hazards</th>
+                                        <th style={{...tableHeaderStyle, width: '15%'}}>Highest Initial</th>
+                                        <th style={{...tableHeaderStyle, width: '15%'}}>Highest Residual</th>
+                                        <th style={{...tableHeaderStyle, width: '25%'}}>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {Object.entries(risks).map(([key, category]) => {
+                                        const categoryHazards = category.hazards.filter(h => h.selected);
+                                        const maxInitial = Math.max(...categoryHazards.map(h => (h.initialLikelihood || 0) * (h.initialSeverity || 0)), 0);
+                                        const maxResidual = Math.max(...categoryHazards.map(h => (h.residualLikelihood || 0) * (h.residualSeverity || 0)), 0);
+                                        
+                                        return (
+                                            <tr key={key}>
+                                                <td style={cellStyle}>{category.title}</td>
+                                                <td style={{...cellStyle, textAlign: 'center'}}>{categoryHazards.length}</td>
+                                                <td style={{
+                                                    ...cellStyle, 
+                                                    textAlign: 'center',
+                                                    backgroundColor: getRiskColor(maxInitial),
+                                                    color: maxInitial >= 15 ? 'white' : 'black',
+                                                    fontWeight: 'bold'
+                                                }}>{maxInitial}</td>
+                                                <td style={{
+                                                    ...cellStyle, 
+                                                    textAlign: 'center',
+                                                    backgroundColor: getRiskColor(maxResidual),
+                                                    color: maxResidual >= 15 ? 'white' : 'black',
+                                                    fontWeight: 'bold'
+                                                }}>{maxResidual}</td>
+                                                <td style={{...cellStyle, textAlign: 'center'}}>
+                                                    {maxResidual <= 6 ? '✅ ACCEPTABLE' : maxResidual <= 12 ? '⚠️ MONITOR' : '🚨 REVIEW REQUIRED'}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+
+                            {/* Overall Risk Assessment */}
+                            <div style={{ 
+                                padding: '15px', 
+                                backgroundColor: highestResidualRisk <= 6 ? '#d4edda' : highestResidualRisk <= 12 ? '#fff3cd' : '#f8d7da',
+                                border: `2px solid ${highestResidualRisk <= 6 ? '#28a745' : highestResidualRisk <= 12 ? '#ffc107' : '#dc3545'}`,
+                                borderRadius: '8px',
+                                marginBottom: '20px'
+                            }}>
+                                <h4 style={{ margin: '0 0 10px 0', color: '#2c4f6b' }}>Overall Project Risk Assessment</h4>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', fontSize: '12px' }}>
+                                    <div>
+                                        <strong>Total Hazards Identified:</strong> {allHazards.length}
+                                    </div>
+                                    <div>
+                                        <strong>Highest Residual Risk:</strong> 
+                                        <span style={{ 
+                                            marginLeft: '5px',
+                                            padding: '2px 6px',
+                                            backgroundColor: getRiskColor(highestResidualRisk),
+                                            color: highestResidualRisk >= 15 ? 'white' : 'black',
+                                            borderRadius: '3px',
+                                            fontWeight: 'bold'
+                                        }}>{highestResidualRisk}</span>
+                                    </div>
+                                    <div>
+                                        <strong>Average Risk Reduction:</strong> {averageReduction} points
+                                    </div>
+                                </div>
+                                <div style={{ marginTop: '10px', fontSize: '12px', fontWeight: 'bold' }}>
+                                    <strong>Project Status:</strong> 
+                                    <span style={{ marginLeft: '5px', color: highestResidualRisk <= 6 ? '#28a745' : highestResidualRisk <= 12 ? '#ffc107' : '#dc3545' }}>
+                                        {highestResidualRisk <= 6 ? 'APPROVED - Low Risk Project' : 
+                                         highestResidualRisk <= 12 ? 'CONDITIONAL APPROVAL - Monitor High Risk Items' : 
+                                         'REQUIRES REVIEW - High Risk Project'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })()}
+            </Section>
+
+            {/* Page Break */}
+            <div className="page-break"></div>
+
+            <Section title="8.0 Approval & Sign-Off">
+                {/* Declaration */}
+                <div style={{ 
+                    padding: '15px', 
+                    backgroundColor: '#fff3cd', 
+                    border: '2px solid #ffc107', 
+                    borderRadius: '5px',
+                    marginBottom: '30px'
+                }}>
+                    <h4 style={{ color: '#2c4f6b', marginBottom: '10px' }}>Declaration</h4>
+                    <p style={{ fontSize: '11px', margin: '0 0 10px 0', fontStyle: 'italic' }}>
+                        By signing this document, I confirm that:
+                    </p>
+                    <ul style={{ fontSize: '11px', margin: '0', paddingLeft: '20px' }}>
+                        <li>I have read and understood the contents of this Risk Assessment and Method Statement</li>
+                        <li>I agree to comply with all specified safety procedures and control measures</li>
+                        <li>I will ensure all team members are briefed on the risks and controls identified</li>
+                        <li>I will report any changes to risks or working conditions immediately</li>
+                        <li>I understand that failure to follow these procedures may result in disciplinary action</li>
+                    </ul>
+                </div>
+
+                {/* Simple Approval Section */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '40px', marginTop: '50px' }}>
                     <div>
-                        <div style={{ borderBottom: '1px solid #333', height: '30px' }}></div>
-                        <p style={{ margin: '5px 0 0 0', fontSize: '10px', fontWeight: 'bold' }}>Print Name</p>
+                        <div style={{ borderBottom: '2px solid #333', height: '40px' }}></div>
+                        <p style={{ margin: '10px 0 0 0', fontSize: '12px', fontWeight: 'bold', textAlign: 'center' }}>Print Name</p>
                     </div>
                     <div>
-                        <div style={{ borderBottom: '1px solid #333', height: '30px' }}></div>
-                        <p style={{ margin: '5px 0 0 0', fontSize: '10px', fontWeight: 'bold' }}>Signature</p>
+                        <div style={{ borderBottom: '2px solid #333', height: '40px' }}></div>
+                        <p style={{ margin: '10px 0 0 0', fontSize: '12px', fontWeight: 'bold', textAlign: 'center' }}>Signature</p>
                     </div>
                     <div>
-                        <div style={{ borderBottom: '1px solid #333', height: '30px' }}></div>
-                        <p style={{ margin: '5px 0 0 0', fontSize: '10px', fontWeight: 'bold' }}>Date</p>
+                        <div style={{ borderBottom: '2px solid #333', height: '40px' }}></div>
+                        <p style={{ margin: '10px 0 0 0', fontSize: '12px', fontWeight: 'bold', textAlign: 'center' }}>Date</p>
                     </div>
+                </div>
+
+                <div style={{ marginTop: '30px', textAlign: 'center', fontSize: '11px', color: '#666' }}>
+                    <strong>Position/Role:</strong> ________________________________
                 </div>
             </Section>
 
