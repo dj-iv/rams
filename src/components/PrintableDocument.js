@@ -77,6 +77,7 @@ const PrintableDocument = ({ data, allTasks }) => {
         projectDescription,
         commencementDate,
         estimatedCompletionDate,
+        hoursOfWork,
         preparedBy,
         preparedByEmail,
         preparedByPhone,
@@ -257,6 +258,12 @@ const PrintableDocument = ({ data, allTasks }) => {
                         </div>
                         <div style={{ marginBottom: '15px' }}>
                             <DetailItem label="Estimated Completion Date" value={estimatedCompletionDate} />
+                        </div>
+                        <div style={{ marginBottom: '15px' }}>
+                            <DetailItem 
+                                label="Hours of Work" 
+                                value={hoursOfWork ? `${hoursOfWork.startTime} - ${hoursOfWork.endTime}` : 'Not specified'} 
+                            />
                         </div>
                         <div style={{ marginBottom: '15px' }}>
                             <DetailItem label="Document Creation Date" value={documentCreationDate} />

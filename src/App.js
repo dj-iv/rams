@@ -369,6 +369,10 @@ useEffect(() => {
           projectDescription: allTemplates[initialTemplateKey]?.description || '',
           commencementDate: '2025-09-01',
           estimatedCompletionDate: '2025-09-05',
+          hoursOfWork: {
+            startTime: '08:00',
+            endTime: '17:00'
+          },
           preparedBy: 'James Smith',
           preparedByEmail: 'james.smith@uctel.co.uk',
           preparedByPhone: '+44 7730 890403',
