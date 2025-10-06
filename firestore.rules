@@ -1,0 +1,40 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow read and write access to all documents in all collections
+    // This is appropriate for a single-user application like the RAMS generator
+    // where the app is used internally and doesn't require user authentication
+    
+    match /{document=**} {
+      allow read, write: if true;
+    }
+    
+    // More specific rules if you want to be more granular:
+    
+    // Standard tasks collection - allow all operations
+    match /standardTasks/{taskId} {
+      allow read, write: if true;
+    }
+    
+    // Job templates collection - allow all operations
+    match /jobTemplates/{templateId} {
+      allow read, write: if true;
+    }
+    
+    // Risk assessments collection - allow all operations
+    match /riskAssessments/{riskId} {
+      allow read, write: if true;
+    }
+    
+    // Team members collection - allow all operations
+    match /teamMembers/{memberId} {
+      allow read, write: if true;
+    }
+    
+    // PPE, Tools, Materials, Permits collections - allow all operations
+    match /{collection}/{itemId} {
+      allow read, write: if collection in ['ppe', 'tools', 'materials', 'permits'];
+    }
+  }
+}
