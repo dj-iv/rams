@@ -93,6 +93,10 @@ const PrintableDocument = ({ data, allTasks }) => {
     } = data;
 
     const enabledTasks = selectedTasks.filter(task => task.enabled);
+    const riskEntries = Object.entries(risks || {});
+    const selectedRiskEntries = riskEntries.filter(([, category]) =>
+        Array.isArray(category?.hazards) && category.hazards.some(hazard => hazard.selected)
+    );
 
     const tableHeaderStyle = {
         backgroundColor: '#004a63', // darker blue like screenshot
@@ -188,15 +192,15 @@ const PrintableDocument = ({ data, allTasks }) => {
                             <span style={{ fontWeight: 'bold' }}>4.0 Risk Assessments</span>
                             <span style={{ fontWeight: 'bold' }}>Page 3</span>
                         </div>
-                        {Object.entries(risks).map(([key, riskCategory], index) => (
+                        {selectedRiskEntries.map(([key, riskCategory], index) => (
                             <div key={key} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', padding: '3px 0 3px 20px', borderBottom: '1px dotted #eee' }}>
                                 <span>4.{index + 1} {riskCategory.title}</span>
-                                <span>Page {3 + Math.floor(index/2)}</span>
+                                <span>Page {3 + Math.floor(index / 2)}</span>
                             </div>
                         ))}
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', padding: '4px 0', borderBottom: '1px dotted #ccc' }}>
                             <span style={{ fontWeight: 'bold' }}>5.0 Safety & Logistics</span>
-                            <span style={{ fontWeight: 'bold' }}>Page {4 + Math.floor(Object.keys(risks).length/2)}</span>
+                            <span style={{ fontWeight: 'bold' }}>Page {4 + Math.floor(selectedRiskEntries.length / 2)}</span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', padding: '4px 0', borderBottom: '1px dotted #ccc' }}>
                             <span style={{ fontWeight: 'bold' }}>6.0 Equipment</span>
@@ -475,11 +479,10 @@ const PrintableDocument = ({ data, allTasks }) => {
             </Section>
 
             {/* Conditional Page Break - only if there are risks to display */}
-            {Object.entries(risks).length > 0 && enabledTasks.length > 0 && <div className="page-break"></div>}
+            {selectedRiskEntries.length > 0 && enabledTasks.length > 0 && <div className="page-break"></div>}
 
             <Section title="4.0 Risk Assessments">
-                {Object.entries(risks)
-                    .filter(([key, riskCategory]) => riskCategory.hazards.some(h => h.selected))
+                {selectedRiskEntries
                     .map(([key, riskCategory], categoryIndex) => (
                     <div key={key}>
                         {/* Page break before each risk category (except the first) */}
@@ -643,7 +646,7 @@ const PrintableDocument = ({ data, allTasks }) => {
             </Section>
 
             {/* Conditional Page Break - only if there's substantial content above */}
-            {(safetyLogistics.length > 2 || Object.entries(risks).length > 0) && <div className="page-break"></div>}
+            {(safetyLogistics.length > 2 || selectedRiskEntries.length > 0) && <div className="page-break"></div>}
 
             <Section title="6.0 Equipment">
                 <div style={{ fontSize: '12px' }}>
@@ -701,12 +704,12 @@ const PrintableDocument = ({ data, allTasks }) => {
             </Section>
 
             {/* Conditional Page Break - only if there are risks to summarize */}
-            {Object.entries(risks).length > 0 && Object.values(risks).some(category => category.hazards.some(h => h.selected)) && <div className="page-break"></div>}
+            {selectedRiskEntries.length > 0 && <div className="page-break"></div>}
 
             <Section title="7.0 Risk Summary & Analysis">
                 {(() => {
                     // Calculate risk statistics
-                    const allHazards = Object.values(risks).flatMap(category => 
+                    const allHazards = selectedRiskEntries.flatMap(([, category]) => 
                         category.hazards.filter(h => h.selected)
                     );
                     
@@ -804,7 +807,7 @@ const PrintableDocument = ({ data, allTasks }) => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {Object.entries(risks).map(([key, category]) => {
+                                    {selectedRiskEntries.map(([key, category]) => {
                                         const categoryHazards = category.hazards.filter(h => h.selected);
                                         const maxInitial = Math.max(...categoryHazards.map(h => (h.initialLikelihood || 0) * (h.initialSeverity || 0)), 0);
                                         const maxResidual = Math.max(...categoryHazards.map(h => (h.residualLikelihood || 0) * (h.residualSeverity || 0)), 0);
@@ -879,7 +882,7 @@ const PrintableDocument = ({ data, allTasks }) => {
             </Section>
 
             {/* Conditional Page Break before Approval - only if there's substantial content above */}
-            {(Object.entries(risks).length > 0 || enabledTasks.length > 2) && <div className="page-break"></div>}
+            {(selectedRiskEntries.length > 0 || enabledTasks.length > 2) && <div className="page-break"></div>}
 
             <Section title="8.0 Approval & Sign-Off">
                 {/* Declaration */}
