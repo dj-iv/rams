@@ -13,6 +13,8 @@ import Step6 from './components/steps/Step6';
 import Step7 from './components/steps/Step7';
 import PreviewModal from './components/PreviewModal'; // Ensure this import is present
 
+const PORTAL_BASE_URL = process.env.REACT_APP_PORTAL_URL || 'http://localhost:3001';
+
 const buildInitialTasks = (allTasks, template, templates) => {
   if (!template || !templates[template]) {
     // If no template, return all tasks, sorted by order, and disabled.
@@ -357,6 +359,46 @@ const AppContent = () => {
   const [addingHazardTo, setAddingHazardTo] = useState(null); // State to track which risk category is getting a new hazard
   const [showNewRiskCategoryForm, setShowNewRiskCategoryForm] = useState(false);
   const [showPreview, setShowPreview] = useState(false); // Add state for modal visibility
+
+  const buildPortalLogoutUrl = useCallback((redirectTarget) => {
+    try {
+      const base = new URL(PORTAL_BASE_URL);
+      const logoutUrl = new URL('/login', base);
+      if (redirectTarget) {
+        logoutUrl.searchParams.set('redirect', redirectTarget);
+      }
+      logoutUrl.searchParams.set('logout', '1');
+      return logoutUrl.toString();
+    } catch (error) {
+      const trimmedBase = PORTAL_BASE_URL.endsWith('/') ? PORTAL_BASE_URL.slice(0, -1) : PORTAL_BASE_URL;
+      const redirectQuery = redirectTarget ? `?redirect=${encodeURIComponent(redirectTarget)}&logout=1` : '?logout=1';
+      return `${trimmedBase}/login${redirectQuery}`;
+    }
+  }, []);
+
+  const handleLogout = useCallback(async () => {
+    const redirectTarget = window.location.href;
+    try {
+      const response = await fetch('/logout', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ redirect: redirectTarget }),
+      });
+      const payload = await response.json().catch(() => ({}));
+
+      if (response.ok && typeof payload?.redirect === 'string' && payload.redirect.length > 0) {
+        window.location.assign(payload.redirect);
+        return;
+      }
+
+      console.warn('[rams] logout endpoint returned unexpected response', { status: response.status, payload });
+      window.location.assign(buildPortalLogoutUrl(redirectTarget));
+    } catch (error) {
+      console.error('[rams] logout request failed', error);
+      window.location.assign(buildPortalLogoutUrl(redirectTarget));
+    }
+  }, [buildPortalLogoutUrl]);
 
 useEffect(() => {
      // This effect now runs once the initial data fetch is complete, even if some collections are empty.
@@ -1068,6 +1110,14 @@ useEffect(() => {
     <>
       <div className="main-content bg-slate-100 font-sans text-slate-800 min-h-screen" style={{'--uctel-orange': '#d88e43', '--uctel-teal': '#008080', '--uctel-blue': '#2c4f6b'}}>
         <div className="container mx-auto p-4 md:p-8">
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-[var(--uctel-blue)] hover:text-[var(--uctel-blue)] focus:outline-none focus:ring-2 focus:ring-[var(--uctel-blue)]"
+            >
+              Sign out
+            </button>
+          </div>
           <header className="text-center mb-8 flex flex-col items-center">
              <img src={uctelLogo} alt="UCtel Logo" className="h-12 mb-4" />
            <h1 className="text-4xl font-bold text-[var(--uctel-blue)]">RAMS Generator</h1>

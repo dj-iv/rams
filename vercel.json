@@ -5,5 +5,8 @@
       "memory": 1024,
       "maxDuration": 30
     }
-  }
+  },
+  "rewrites": [
+    { "source": "/portal/callback", "destination": "/api/portal-callback" }
+  ]
 }

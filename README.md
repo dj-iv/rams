@@ -2,6 +2,51 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Environment
+
+Set the portal handshake variables before running locally or deploying:
+
+```bash
+PORTAL_SIGNING_SECRET=matching_secret_from_portal
+REACT_APP_PORTAL_URL=https://portal.yourdomain.co.uk
+PORTAL_URL=https://portal.yourdomain.co.uk
+```
+
+Configure Firebase Admin access for the RAMS generator (inline keys or a JSON service account file):
+
+```bash
+RAMS_FIREBASE_PROJECT_ID=your-project-id
+RAMS_FIREBASE_CLIENT_EMAIL=firebase-adminsdk@your-project.iam.gserviceaccount.com
+RAMS_FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+# or point to a JSON file instead
+RAMS_FIREBASE_SERVICE_ACCOUNT=./firebase-service-account.json
+RAMS_API_PORT=3101
+RAMS_API_ORIGIN=http://localhost:3101
+REACT_APP_RAMS_API_ORIGIN=http://localhost:3101
+# Optional development bypass if the UCtel portal is unavailable locally
+# RAMS_DEV_PORTAL_BYPASS=true
+# RAMS_DEV_PORTAL_UID=rams-dev-user
+# RAMS_DEV_PORTAL_EMAIL=dev.user@uctel.co.uk
+# RAMS_DEV_PORTAL_NAME=RAMS Dev User
+```
+
+### Local development
+
+Run both the React dev server and the lightweight API shim with:
+
+```bash
+npm run dev
+```
+
+This will start the API on `http://localhost:3101` (configurable via `RAMS_API_PORT`) and proxy `/api/*` calls from the React dev server. If you prefer manual control, start the servers separately:
+
+```bash
+npm run serve-api   # starts only the API shim (defaults to port 3101)
+npm start           # runs the CRA dev server on port 3000
+```
+
+The app displays a setup warning if the dev API is unreachable so you know to start it.
+
 ## Available Scripts
 
 In the project directory, you can run:
