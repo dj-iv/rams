@@ -13,7 +13,7 @@ import Step6 from './components/steps/Step6';
 import Step7 from './components/steps/Step7';
 import PreviewModal from './components/PreviewModal'; // Ensure this import is present
 
-const PORTAL_BASE_URL = process.env.REACT_APP_PORTAL_URL || 'http://localhost:3001';
+const PORTAL_BASE_URL = process.env.REACT_APP_PORTAL_URL || 'http://localhost:3300';
 
 const buildInitialTasks = (allTasks, template, templates) => {
   if (!template || !templates[template]) {

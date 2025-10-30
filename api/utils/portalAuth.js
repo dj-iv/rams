@@ -8,7 +8,7 @@ function getPortalBaseUrl() {
   return process.env.REACT_APP_PORTAL_URL
     || process.env.NEXT_PUBLIC_PORTAL_URL
     || process.env.PORTAL_URL
-    || 'http://localhost:3000'
+  || 'http://localhost:3300'
 }
 
 function getSecret() {

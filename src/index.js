@@ -8,7 +8,7 @@ import reportWebVitals from './reportWebVitals';
 import { signInWithCustomToken } from 'firebase/auth';
 import { auth } from './firebase';
 
-const PORTAL_BASE_URL = process.env.REACT_APP_PORTAL_URL || 'http://localhost:3000';
+const PORTAL_BASE_URL = process.env.REACT_APP_PORTAL_URL || 'http://localhost:3300';
 
 const buildPortalLaunchUrl = (redirectTarget) => {
   try {
