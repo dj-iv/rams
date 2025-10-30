@@ -29,7 +29,7 @@
   },
   "scripts": {
     "dev": "concurrently \"npm run serve-api\" \"npm start\"",
-    "start": "react-scripts start",
+    "start": "cross-env PORT=3304 react-scripts start",
     "build": "react-scripts build",
     "serve-api": "node server.js",
     "test": "react-scripts test",
@@ -37,6 +37,7 @@
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
+    "cross-env": "^7.0.3",
     "puppeteer": "^10.4.0"
   },
   "eslintConfig": {

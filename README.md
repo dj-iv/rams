@@ -4,7 +4,7 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 ## Environment
 
-Set the portal handshake variables before running locally or deploying:
+Set the portal handshake variables before running locally or deploying. The recommended approach is to create an `.env.local` file (ignored by git) in the project root and add the following values:
 
 ```bash
 PORTAL_SIGNING_SECRET=matching_secret_from_portal
@@ -38,11 +38,11 @@ Run both the React dev server and the lightweight API shim with:
 npm run dev
 ```
 
-This will start the API on `http://localhost:3101` (configurable via `RAMS_API_PORT`) and proxy `/api/*` calls from the React dev server. If you prefer manual control, start the servers separately:
+This will start the API on `http://localhost:3101` (configurable via `RAMS_API_PORT`) and the React dev server on `http://localhost:3304`, proxying `/api/*` calls automatically. If you prefer manual control, start the servers separately:
 
 ```bash
 npm run serve-api   # starts only the API shim (defaults to port 3101)
-npm start           # runs the CRA dev server on port 3000
+npm start           # runs the CRA dev server on port 3304
 ```
 
 The app displays a setup warning if the dev API is unreachable so you know to start it.
