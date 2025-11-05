@@ -1,10 +1,13 @@
 const { getRamsFirestore } = require('./utils/firebaseAdmin');
 
 module.exports = async (req, res) => {
-  const shareCode = req.params?.code;
+  const shareCode =
+    (req.params && typeof req.params.code === 'string' && req.params.code) ||
+    (req.query && typeof req.query.code === 'string' && req.query.code) ||
+    (req.query && typeof req.query.shareCode === 'string' && req.query.shareCode);
 
   if (!shareCode || typeof shareCode !== 'string') {
-    res.status(400).json({ error: 'Missing share code.' });
+  res.status(400).json({ error: 'Missing share code.' });
     return;
   }
 
