@@ -185,8 +185,14 @@ const startApp = () => {
   reportWebVitals();
 };
 
-ensurePortalSession().then((hasSession) => {
-  if (hasSession) {
-    startApp();
-  }
-});
+const isShareRoute = window.location.pathname.startsWith('/share/');
+
+if (isShareRoute) {
+  startApp();
+} else {
+  ensurePortalSession().then((hasSession) => {
+    if (hasSession) {
+      startApp();
+    }
+  });
+}

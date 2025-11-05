@@ -39,6 +39,7 @@ const adaptHandler = (handlerPath) => async (req, res, next) => {
 app.all(['/api/session', '/session'], adaptHandler('./api/session'));
 app.get(['/api/portal-callback', '/portal/callback'], adaptHandler('./api/portal-callback'));
 app.all(['/api/logout', '/logout'], adaptHandler('./api/logout'));
+app.get(['/api/rams/share/:code', '/rams/share/:code'], adaptHandler('./api/get-rams-share'));
 
 app.use((error, req, res, next) => {
   console.error('[rams-dev-api] handler error', error);

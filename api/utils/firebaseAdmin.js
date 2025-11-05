@@ -1,5 +1,6 @@
 const { initializeApp, cert, getApps } = require('firebase-admin/app')
 const { getAuth } = require('firebase-admin/auth')
+const { getFirestore } = require('firebase-admin/firestore')
 const fs = require('fs')
 const path = require('path')
 
@@ -94,6 +95,13 @@ function getRamsAuth() {
   return getAuth(app)
 }
 
+function getRamsFirestore() {
+  const fallback = path.join(process.cwd(), 'firebase-service-account.json')
+  const app = initAdminApp('rams-admin', 'RAMS', [fallback])
+  return getFirestore(app)
+}
+
 module.exports = {
   getRamsAuth,
+  getRamsFirestore,
 }

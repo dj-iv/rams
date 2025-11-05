@@ -109,15 +109,6 @@ const PrintableDocument = ({ data, allTasks }) => {
         fontWeight: 'bold'
     };
 
-    // Risk table specific styles (separate from generic tableHeaderStyle if needed later)
-    const riskHeaderTextStyle = {
-        ...tableHeaderStyle,
-        textAlign: 'center',
-        fontWeight: 'bold',
-        backgroundColor: '#0a4f69', // deeper teal like screenshot
-        border: '1px solid #000'
-    };
-
     const cellStyle = {
         padding: '8px 6px',
         fontSize: '11px',
@@ -126,15 +117,6 @@ const PrintableDocument = ({ data, allTasks }) => {
         verticalAlign: 'middle',
         backgroundColor: 'white'
     };
-
-    const riskCell = (score) => ({
-        ...cellStyle,
-        backgroundColor: getRiskColor(score),
-        fontWeight: 'bold',
-        textAlign: 'center',
-        // Only use white text on the deepest red; orange/yellow/green remain black like screenshot
-        color: score >= 20 ? 'white' : 'black',
-    });
 
     return (
         <div className="printable-document" style={{ fontFamily: 'Arial, sans-serif', color: '#333', padding: '15px', backgroundColor: 'white', maxWidth: 'none', width: '700px', margin: '0 auto' }}>
@@ -425,15 +407,17 @@ const PrintableDocument = ({ data, allTasks }) => {
 
             <Section title="3.0 Method Statement (Sequence of Works)">
                 <div style={{ fontSize: '12px' }}>
-                    {enabledTasks.map((task, index) => (
-                        <div key={task.id} style={{ marginBottom: '20px' }}>
+                                        {enabledTasks.map((task, index) => {
+                                                const taskTitle = (allTasks && allTasks[task.taskId]?.title) || task.taskTitle || 'Unknown Task';
+                                                return (
+                                                    <div key={task.id} style={{ marginBottom: '20px' }}>
                             <h4 style={{
                                 margin: '0 0 5px 0',
                                 color: '#2c4f6b',
                                 fontSize: '14px',
                                 fontWeight: 'bold'
                             }}>
-                                3.{index + 1} {allTasks[task.taskId]?.title || 'Unknown Task'}
+                                3.{index + 1} {taskTitle}
                             </h4>
                             <p style={{
                                 margin: '0 0 10px 0',
@@ -458,7 +442,7 @@ const PrintableDocument = ({ data, allTasks }) => {
                                         }}>
                                             <img
                                                 src={image.dataUrl}
-                                                alt={`${allTasks[task.taskId]?.title || 'Task'} - Image ${imgIndex + 1}`}
+                                                alt={`${taskTitle} reference ${imgIndex + 1}`}
                                                 style={{
                                                     maxWidth: '100%',
                                                     maxHeight: '150px',
@@ -473,8 +457,9 @@ const PrintableDocument = ({ data, allTasks }) => {
                                     ))}
                                 </div>
                             )}
-                        </div>
-                    ))}
+                          </div>
+                        );
+                    })}
                 </div>
             </Section>
 
@@ -598,7 +583,7 @@ const PrintableDocument = ({ data, allTasks }) => {
                 ))}
                 {/* Force image size with a container */}
                 <div style={{ width: '12cm', marginTop: '20px', marginLeft: 'auto', marginRight: 'auto' }}>
-                    <img src={riskEvaluationMatrix} alt="Risk Evaluation Matrix" style={{ width: '100%', height: 'auto', display: 'block' }} />
+                    <img src={riskEvaluationMatrix} alt="Colour-coded risk evaluation chart" style={{ width: '100%', height: 'auto', display: 'block' }} />
                 </div>
             </Section>
 
@@ -733,7 +718,6 @@ const PrintableDocument = ({ data, allTasks }) => {
                         }
                     };
 
-                    const highestInitialRisk = Math.max(...initialRisks, 0);
                     const highestResidualRisk = Math.max(...residualRisks, 0);
                     const averageReduction = initialRisks.length > 0 ? 
                         ((initialRisks.reduce((a, b) => a + b, 0) - residualRisks.reduce((a, b) => a + b, 0)) / initialRisks.length).toFixed(1) : 0;
