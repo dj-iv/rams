@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import uctelLogo from './assets/uctel-logo.png';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { db } from './firebase'; 
-import { collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore'; 
+import { collection, getDocs, doc, setDoc, deleteDoc, addDoc, updateDoc, getDoc, serverTimestamp } from 'firebase/firestore'; 
 import { DEFAULT_PERMITS, DEFAULT_PPE, DEFAULT_TOOLS, DEFAULT_MATERIALS } from './constants';
 import Step1 from './components/steps/Step1';
 import Step2 from './components/steps/Step2';
@@ -12,6 +12,28 @@ import Step5 from './components/steps/Step5';
 import Step6 from './components/steps/Step6';
 import Step7 from './components/steps/Step7';
 import PreviewModal from './components/PreviewModal'; // Ensure this import is present
+import ShareView from './components/ShareView';
+import { useAuth } from './hooks/useAuth';
+import { useSavedRamsDocuments } from './hooks/useSavedRamsDocuments';
+import SavedRamsPage from './pages/SavedRamsPage';
+
+const PORTAL_BASE_URL = process.env.REACT_APP_PORTAL_URL || 'http://localhost:3300';
+
+const generateShareCode = () => {
+  const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const length = 14;
+  if (typeof window !== 'undefined' && window.crypto?.getRandomValues) {
+    const buffer = new Uint32Array(length);
+    window.crypto.getRandomValues(buffer);
+    return Array.from(buffer, (value) => alphabet[value % alphabet.length]).join('');
+  }
+  let result = '';
+  for (let i = 0; i < length; i += 1) {
+    const index = Math.floor(Math.random() * alphabet.length);
+    result += alphabet[index];
+  }
+  return result;
+};
 
 const buildInitialTasks = (allTasks, template, templates) => {
   if (!template || !templates[template]) {
@@ -21,6 +43,7 @@ const buildInitialTasks = (allTasks, template, templates) => {
       .map(([taskId, taskInfo]) => ({
         id: `${taskId}-${Date.now()}`,
         taskId: taskId,
+        taskTitle: taskInfo.title || taskId,
         selectedOption: Object.keys(taskInfo.options)[0],
         description: taskInfo.defaultDescription || Object.values(taskInfo.options)[0].description,
         enabled: false,
@@ -34,6 +57,7 @@ const buildInitialTasks = (allTasks, template, templates) => {
     .map(([taskId, taskInfo]) => ({
       id: `${taskId}-${Date.now()}`,
       taskId: taskId,
+      taskTitle: taskInfo.title || taskId,
       selectedOption: Object.keys(taskInfo.options)[0],
       description: taskInfo.defaultDescription || Object.values(taskInfo.options)[0].description,
       enabled: templateTaskIds.includes(taskId), // Enable if task ID is in the template
@@ -349,6 +373,11 @@ const Step3 = ({ data, allTasks, allTemplates, handlers, showNewTemplateForm, sh
 
 // Main App component (renamed to AppContent to avoid conflicts)
 const AppContent = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user: currentUser } = useAuth();
+  const { documents: savedDocuments = [] } = useSavedRamsDocuments(currentUser);
+
   const [formData, setFormData] = useState(null);
   const [dbPpe, setDbPpe] = useState([]);
   const [dbTools, setDbTools] = useState([]);
@@ -365,6 +394,211 @@ const AppContent = () => {
   const [addingHazardTo, setAddingHazardTo] = useState(null); // State to track which risk category is getting a new hazard
   const [showNewRiskCategoryForm, setShowNewRiskCategoryForm] = useState(false);
   const [showPreview, setShowPreview] = useState(false); // Add state for modal visibility
+  const [activeDocumentId, setActiveDocumentId] = useState(null);
+  const [activeShareCode, setActiveShareCode] = useState(null);
+  const [isSavingDocument, setIsSavingDocument] = useState(false);
+  const [saveFeedback, setSaveFeedback] = useState('');
+
+  useEffect(() => {
+    if (!currentUser) {
+      setActiveDocumentId(null);
+      setActiveShareCode(null);
+    }
+  }, [currentUser]);
+
+  const prepareFormForPersistence = useCallback(() => {
+    if (!formData) {
+      return null;
+    }
+    const clone = JSON.parse(JSON.stringify(formData));
+    if (Array.isArray(clone.selectedTasks)) {
+      clone.selectedTasks = clone.selectedTasks.map((task) => ({
+        ...task,
+        taskTitle: allTasks?.[task.taskId]?.title || task.taskTitle || '',
+      }));
+    }
+    return clone;
+  }, [formData, allTasks]);
+
+  const buildPortalLogoutUrl = useCallback((redirectTarget) => {
+    try {
+      const base = new URL(PORTAL_BASE_URL);
+      const logoutUrl = new URL('/login', base);
+      if (redirectTarget) {
+        logoutUrl.searchParams.set('redirect', redirectTarget);
+      }
+      logoutUrl.searchParams.set('logout', '1');
+      return logoutUrl.toString();
+    } catch (error) {
+      const trimmedBase = PORTAL_BASE_URL.endsWith('/') ? PORTAL_BASE_URL.slice(0, -1) : PORTAL_BASE_URL;
+      const redirectQuery = redirectTarget ? `?redirect=${encodeURIComponent(redirectTarget)}&logout=1` : '?logout=1';
+      return `${trimmedBase}/login${redirectQuery}`;
+    }
+  }, []);
+
+  const handleLogout = useCallback(async () => {
+    const redirectTarget = window.location.href;
+    try {
+      const response = await fetch('/logout', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ redirect: redirectTarget }),
+      });
+      const payload = await response.json().catch(() => ({}));
+
+      if (response.ok && typeof payload?.redirect === 'string' && payload.redirect.length > 0) {
+        window.location.assign(payload.redirect);
+        return;
+      }
+
+      console.warn('[rams] logout endpoint returned unexpected response', { status: response.status, payload });
+      window.location.assign(buildPortalLogoutUrl(redirectTarget));
+    } catch (error) {
+      console.error('[rams] logout request failed', error);
+      window.location.assign(buildPortalLogoutUrl(redirectTarget));
+    }
+  }, [buildPortalLogoutUrl]);
+
+  const handleSaveDocument = useCallback(async () => {
+    if (!formData) {
+      return;
+    }
+    if (!currentUser) {
+      setSaveFeedback('Portal session is not ready yet. Please try again.');
+      setTimeout(() => setSaveFeedback(''), 4000);
+      return;
+    }
+
+    const preparedForm = prepareFormForPersistence();
+    if (!preparedForm) {
+      return;
+    }
+
+    const summary = {
+      client: preparedForm.client || 'Untitled RAMS',
+      projectDescription: preparedForm.projectDescription || '',
+      siteAddress: preparedForm.siteAddress || '',
+      preparedBy: preparedForm.preparedBy || '',
+    };
+
+    setIsSavingDocument(true);
+    try {
+      if (activeDocumentId) {
+        const docRef = doc(db, 'ramsDocuments', activeDocumentId);
+        const nextShareCode = activeShareCode || generateShareCode();
+        await updateDoc(docRef, {
+          ...summary,
+          formData: preparedForm,
+          shareCode: nextShareCode,
+          ownerUid: currentUser.uid,
+          ownerEmail: currentUser.email || null,
+          ownerName: currentUser.displayName || preparedForm.preparedBy || null,
+          updatedAt: serverTimestamp(),
+        });
+        if (!activeShareCode) {
+          setActiveShareCode(nextShareCode);
+        }
+      } else {
+        const shareCode = generateShareCode();
+        const createdRef = await addDoc(collection(db, 'ramsDocuments'), {
+          ...summary,
+          formData: preparedForm,
+          shareCode,
+          ownerUid: currentUser.uid,
+          ownerEmail: currentUser.email || null,
+          ownerName: currentUser.displayName || preparedForm.preparedBy || null,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+        setActiveDocumentId(createdRef.id);
+        setActiveShareCode(shareCode);
+      }
+
+      setSaveFeedback('RAMS saved successfully.');
+      setTimeout(() => setSaveFeedback(''), 4000);
+    } catch (error) {
+      console.error('Failed to save RAMS document', error);
+      setSaveFeedback('Failed to save RAMS. Please retry.');
+      setTimeout(() => setSaveFeedback(''), 5000);
+    } finally {
+      setIsSavingDocument(false);
+    }
+  }, [formData, currentUser, prepareFormForPersistence, activeDocumentId, activeShareCode, setActiveDocumentId, setActiveShareCode]);
+
+  const handleLoadDocument = useCallback(async (documentId) => {
+    try {
+      const docRef = doc(db, 'ramsDocuments', documentId);
+      const snapshot = await getDoc(docRef);
+      if (!snapshot.exists()) {
+        setSaveFeedback('Selected RAMS could not be found.');
+        setTimeout(() => setSaveFeedback(''), 5000);
+        return;
+      }
+      const data = snapshot.data();
+      if (data.formData) {
+        const hydrated = { ...data.formData };
+        if (Array.isArray(hydrated.selectedTasks)) {
+          hydrated.selectedTasks = hydrated.selectedTasks.map((task) => ({
+            ...task,
+            taskTitle: task.taskTitle || allTasks?.[task.taskId]?.title || task.taskId,
+          }));
+        }
+        setFormData(hydrated);
+      }
+      setActiveDocumentId(documentId);
+      setActiveShareCode(data.shareCode || null);
+      setStep(1);
+      setSaveFeedback(`Loaded RAMS for ${data.client || 'project'}.`);
+      setTimeout(() => setSaveFeedback(''), 4000);
+    } catch (error) {
+      console.error('Failed to load RAMS document', error);
+      setSaveFeedback('Unable to load RAMS. Please try again.');
+      setTimeout(() => setSaveFeedback(''), 5000);
+    }
+  }, [allTasks, setFormData, setActiveDocumentId, setActiveShareCode, setStep, setSaveFeedback]);
+
+  const handleCopyShareLink = useCallback((shareCodeOverride) => {
+    const code = shareCodeOverride || activeShareCode;
+    if (!code) {
+      setSaveFeedback('Save this RAMS first to generate a customer link.');
+      setTimeout(() => setSaveFeedback(''), 4000);
+      return;
+    }
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const link = `${origin}/share/${code}`;
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard
+        .writeText(link)
+        .then(() => {
+          setSaveFeedback('Customer link copied to clipboard.');
+          setTimeout(() => setSaveFeedback(''), 4000);
+        })
+        .catch((error) => {
+          console.warn('Clipboard copy failed, falling back to prompt', error);
+          window.prompt('Copy the RAMS link below:', link);
+        });
+    } else {
+      window.prompt('Copy the RAMS link below:', link);
+    }
+  }, [activeShareCode, setSaveFeedback]);
+
+  const handleStartNewDocument = useCallback(() => {
+    setActiveDocumentId(null);
+    setActiveShareCode(null);
+    setSaveFeedback('');
+    setFormData(null);
+    setStep(1);
+  }, [setActiveDocumentId, setActiveShareCode, setSaveFeedback, setFormData, setStep]);
+
+  useEffect(() => {
+    const loadDocumentId = location.state?.loadDocumentId;
+    if (!loadDocumentId || !currentUser) {
+      return;
+    }
+    handleLoadDocument(loadDocumentId);
+    navigate('.', { replace: true, state: {} });
+  }, [location.state, currentUser, handleLoadDocument, navigate]);
 
 useEffect(() => {
      // This effect now runs once the initial data fetch is complete, even if some collections are empty.
@@ -631,6 +865,7 @@ useEffect(() => {
       const newTaskForSequence = {
         id: `${newTaskId}-${Date.now()}`,
         taskId: newTaskId,
+        taskTitle: title,
         selectedOption: 'default',
         description: description,
         enabled: true,
@@ -1098,6 +1333,10 @@ useEffect(() => {
   const nextStep = () => setStep(s => Math.min(s + 1, TOTAL_STEPS));
   const prevStep = () => setStep(s => Math.max(s - 1, 1));
 
+  const activeDocumentSummary = activeDocumentId
+    ? savedDocuments.find((docMeta) => docMeta.id === activeDocumentId) || null
+    : null;
+
   if (isLoading || !formData) {
       return <div className="text-center p-12">Loading RAMS Generator...</div>
   }
@@ -1160,7 +1399,14 @@ useEffect(() => {
       case 6: return <Step6 data={formData} handlers={{ handleSelectableListToggle, handleAddCustomSafetyItem: addCustomItem, handleCustomItemChange, removeCustomItem, handleInputChange }} />;
      
       case 7: return <Step7 previewHandler={handlePreview} />;
-      default: return <Step1 data={formData} handler={handleInputChange} />;
+      default: return (
+        <Step1
+          data={formData}
+          handler={handleInputChange}
+          onSignatureImageUpload={handleSignatureImageUpload}
+          onSignatureImageRemove={handleSignatureImageRemove}
+        />
+      );
     }
   };
 
@@ -1174,6 +1420,55 @@ useEffect(() => {
     <>
       <div className="main-content bg-slate-100 font-sans text-slate-800 min-h-screen" style={{'--uctel-orange': '#d88e43', '--uctel-teal': '#008080', '--uctel-blue': '#2c4f6b'}}>
         <div className="container mx-auto p-4 md:p-8">
+          <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex flex-col gap-1 text-sm text-slate-600">
+              {activeDocumentSummary ? (
+                <span>
+                  Active RAMS: <span className="font-semibold text-slate-800">{activeDocumentSummary.client}</span>
+                  {activeDocumentSummary.updatedAt ? ` (updated ${new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' }).format(activeDocumentSummary.updatedAt)})` : ''}
+                </span>
+              ) : (
+                <span>No saved RAMS selected.</span>
+              )}
+              {saveFeedback && (
+                <span className="text-teal-700">{saveFeedback}</span>
+              )}
+            </div>
+            <div className="flex flex-wrap justify-end gap-2">
+              <button
+                onClick={() => navigate('/saved')}
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-[var(--uctel-blue)] hover:text-[var(--uctel-blue)] focus:outline-none focus:ring-2 focus:ring-[var(--uctel-blue)]"
+              >
+                Manage Saved RAMS
+              </button>
+              <button
+                onClick={handleSaveDocument}
+                disabled={isSavingDocument || !formData || !currentUser}
+                className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[var(--uctel-blue)] ${isSavingDocument || !formData || !currentUser ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : 'bg-[var(--uctel-blue)] text-white hover:bg-opacity-90'}`}
+              >
+                {isSavingDocument ? 'Saving...' : activeDocumentId ? 'Save Changes' : 'Save RAMS'}
+              </button>
+              <button
+                onClick={() => handleCopyShareLink()}
+                disabled={!activeShareCode && !activeDocumentId}
+                className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[var(--uctel-blue)] ${activeShareCode || activeDocumentId ? 'border-[var(--uctel-blue)] text-[var(--uctel-blue)] hover:bg-blue-50' : 'border-slate-300 text-slate-400 cursor-not-allowed'}`}
+              >
+                Copy Customer Link
+              </button>
+              <button
+                onClick={handleStartNewDocument}
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-[var(--uctel-blue)] hover:text-[var(--uctel-blue)] focus:outline-none focus:ring-2 focus:ring-[var(--uctel-blue)]"
+              >
+                New RAMS
+              </button>
+              <button
+                onClick={handleLogout}
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-[var(--uctel-blue)] hover:text-[var(--uctel-blue)] focus:outline-none focus:ring-2 focus:ring-[var(--uctel-blue)]"
+              >
+                Sign out
+              </button>
+            </div>
+          </div>
           <header className="text-center mb-8 flex flex-col items-center">
              <img src={uctelLogo} alt="UCtel Logo" className="h-12 mb-4" />
            <h1 className="text-4xl font-bold text-[var(--uctel-blue)]">RAMS Generator</h1>
@@ -1225,6 +1520,8 @@ const App = () => (
   <Router>
     <Routes>
       <Route path="/" element={<AppContent />} />
+      <Route path="/saved" element={<SavedRamsPage />} />
+      <Route path="/share/:shareCode" element={<ShareView />} />
       {/* The /preview route is no longer needed */}
       {/* <Route path="/preview" element={<PreviewPage />} /> */}
     </Routes>

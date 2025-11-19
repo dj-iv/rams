@@ -18,6 +18,7 @@ jest.mock('react-router-dom', () => {
 		useNavigate: () => () => {},
 		useLocation: () => ({ pathname: '/' }),
 		useParams: () => ({}),
+		Link: ({ children }) => React.createElement(Fragment, null, children),
 	};
 }, { virtual: true });
 
@@ -41,7 +42,21 @@ jest.mock('./firebase', () => ({
 	db: {},
 }), { virtual: true });
 
+jest.mock('./hooks/useAuth', () => ({
+	useAuth: () => ({ user: null, loading: false }),
+}), { virtual: true });
+
+jest.mock('./hooks/useSavedRamsDocuments', () => ({
+	useSavedRamsDocuments: () => ({
+		documents: [],
+		loading: false,
+		indexWarning: false,
+		deleteDocument: jest.fn(async () => {}),
+	}),
+}), { virtual: true });
+
 jest.mock('firebase/firestore', () => {
+	const asyncNoop = jest.fn(async () => {});
 	return {
 		__esModule: true,
 		collection: jest.fn(() => ({})),
@@ -50,7 +65,14 @@ jest.mock('firebase/firestore', () => {
 			docs: [],
 			forEach: () => {},
 		})),
-		setDoc: jest.fn(async () => {}),
-		deleteDoc: jest.fn(async () => {}),
+		setDoc: asyncNoop,
+		deleteDoc: asyncNoop,
+		addDoc: jest.fn(async () => ({ id: 'mock-doc-id' })),
+		updateDoc: asyncNoop,
+		getDoc: jest.fn(async () => ({
+			exists: () => false,
+			data: () => ({}),
+		})),
+		serverTimestamp: jest.fn(() => ({ seconds: 0, nanoseconds: 0 })),
 	};
 }, { virtual: true });
