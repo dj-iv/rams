@@ -89,7 +89,8 @@ const PrintableDocument = ({ data, allTasks }) => {
         ppe,
         tools,
         materials,
-        safetyLogistics
+        safetyLogistics,
+        signatureBlock
     } = data;
 
     const enabledTasks = selectedTasks.filter(task => task.enabled);
@@ -97,6 +98,15 @@ const PrintableDocument = ({ data, allTasks }) => {
     const selectedRiskEntries = riskEntries.filter(([, category]) =>
         Array.isArray(category?.hazards) && category.hazards.some(hazard => hazard.selected)
     );
+
+    const signatureDetails = signatureBlock || {};
+    const signatureName = signatureDetails.name || preparedBy;
+    const signatureDate = signatureDetails.date || documentCreationDate;
+    const signatureMode = signatureDetails.mode || 'typed';
+    const signatureText = signatureDetails.signatureText || signatureName;
+    const signatureImageSrc = signatureMode === 'image' ? signatureDetails?.signatureImage?.dataUrl : null;
+    const matchingTeamMember = (projectTeam || []).find(member => member.name && member.name === signatureName);
+    const signatureRole = matchingTeamMember?.role || (projectTeam && projectTeam[0]?.role) || 'Not specified';
 
     const tableHeaderStyle = {
         backgroundColor: '#004a63', // darker blue like screenshot
@@ -109,6 +119,15 @@ const PrintableDocument = ({ data, allTasks }) => {
         fontWeight: 'bold'
     };
 
+    // Risk table specific styles (separate from generic tableHeaderStyle if needed later)
+    const riskHeaderTextStyle = {
+        ...tableHeaderStyle,
+        textAlign: 'center',
+        fontWeight: 'bold',
+        backgroundColor: '#0a4f69', // deeper teal like screenshot
+        border: '1px solid #000'
+    };
+
     const cellStyle = {
         padding: '8px 6px',
         fontSize: '11px',
@@ -116,6 +135,43 @@ const PrintableDocument = ({ data, allTasks }) => {
         textAlign: 'left',
         verticalAlign: 'middle',
         backgroundColor: 'white'
+    };
+
+    const riskCell = (score) => ({
+        ...cellStyle,
+        backgroundColor: getRiskColor(score),
+        fontWeight: 'bold',
+        textAlign: 'center',
+        // Only use white text on the deepest red; orange/yellow/green remain black like screenshot
+        color: score >= 20 ? 'white' : 'black',
+    });
+
+    const signatureNameFieldStyle = {
+        borderBottom: '2px solid #333',
+        minHeight: '40px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontWeight: '600',
+        fontSize: '12px',
+        backgroundColor: '#fff'
+    };
+
+    const signatureBoxStyle = {
+        border: '2px solid #333',
+        borderRadius: '8px',
+        minHeight: '90px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#fff',
+        padding: '10px'
+    };
+
+    const signatureScriptStyle = {
+        fontFamily: '"Allura", "Great Vibes", "Brush Script MT", cursive',
+        fontSize: '32px',
+        color: '#1f2937'
     };
 
     return (
@@ -407,17 +463,15 @@ const PrintableDocument = ({ data, allTasks }) => {
 
             <Section title="3.0 Method Statement (Sequence of Works)">
                 <div style={{ fontSize: '12px' }}>
-                                        {enabledTasks.map((task, index) => {
-                                                const taskTitle = (allTasks && allTasks[task.taskId]?.title) || task.taskTitle || 'Unknown Task';
-                                                return (
-                                                    <div key={task.id} style={{ marginBottom: '20px' }}>
+                    {enabledTasks.map((task, index) => (
+                        <div key={task.id} style={{ marginBottom: '20px' }}>
                             <h4 style={{
                                 margin: '0 0 5px 0',
                                 color: '#2c4f6b',
                                 fontSize: '14px',
                                 fontWeight: 'bold'
                             }}>
-                                3.{index + 1} {taskTitle}
+                                3.{index + 1} {allTasks[task.taskId]?.title || 'Unknown Task'}
                             </h4>
                             <p style={{
                                 margin: '0 0 10px 0',
@@ -442,7 +496,7 @@ const PrintableDocument = ({ data, allTasks }) => {
                                         }}>
                                             <img
                                                 src={image.dataUrl}
-                                                alt={`${taskTitle} reference ${imgIndex + 1}`}
+                                                alt={`${allTasks[task.taskId]?.title || 'Task'} - Image ${imgIndex + 1}`}
                                                 style={{
                                                     maxWidth: '100%',
                                                     maxHeight: '150px',
@@ -457,9 +511,8 @@ const PrintableDocument = ({ data, allTasks }) => {
                                     ))}
                                 </div>
                             )}
-                          </div>
-                        );
-                    })}
+                        </div>
+                    ))}
                 </div>
             </Section>
 
@@ -583,7 +636,7 @@ const PrintableDocument = ({ data, allTasks }) => {
                 ))}
                 {/* Force image size with a container */}
                 <div style={{ width: '12cm', marginTop: '20px', marginLeft: 'auto', marginRight: 'auto' }}>
-                    <img src={riskEvaluationMatrix} alt="Colour-coded risk evaluation chart" style={{ width: '100%', height: 'auto', display: 'block' }} />
+                    <img src={riskEvaluationMatrix} alt="Risk Evaluation Matrix" style={{ width: '100%', height: 'auto', display: 'block' }} />
                 </div>
             </Section>
 
@@ -718,6 +771,7 @@ const PrintableDocument = ({ data, allTasks }) => {
                         }
                     };
 
+                    const highestInitialRisk = Math.max(...initialRisks, 0);
                     const highestResidualRisk = Math.max(...residualRisks, 0);
                     const averageReduction = initialRisks.length > 0 ? 
                         ((initialRisks.reduce((a, b) => a + b, 0) - residualRisks.reduce((a, b) => a + b, 0)) / initialRisks.length).toFixed(1) : 0;
@@ -890,24 +944,31 @@ const PrintableDocument = ({ data, allTasks }) => {
                     </ul>
                 </div>
 
-                {/* Simple Approval Section */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '40px', marginTop: '50px' }}>
-                    <div>
-                        <div style={{ borderBottom: '2px solid #333', height: '40px' }}></div>
-                        <p style={{ margin: '10px 0 0 0', fontSize: '12px', fontWeight: 'bold', textAlign: 'center' }}>Print Name</p>
-                    </div>
-                    <div>
-                        <div style={{ borderBottom: '2px solid #333', height: '40px' }}></div>
-                        <p style={{ margin: '10px 0 0 0', fontSize: '12px', fontWeight: 'bold', textAlign: 'center' }}>Signature</p>
-                    </div>
-                    <div>
-                        <div style={{ borderBottom: '2px solid #333', height: '40px' }}></div>
-                        <p style={{ margin: '10px 0 0 0', fontSize: '12px', fontWeight: 'bold', textAlign: 'center' }}>Date</p>
+                <div style={{ marginTop: '40px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '30px', alignItems: 'start' }}>
+                        <div>
+                            <div style={signatureNameFieldStyle}>{signatureName || 'Not provided'}</div>
+                            <p style={{ margin: '10px 0 0 0', fontSize: '12px', fontWeight: 'bold', textAlign: 'center' }}>Print Name</p>
+                        </div>
+                        <div>
+                            <div style={signatureBoxStyle}>
+                                {signatureImageSrc ? (
+                                    <img src={signatureImageSrc} alt="Signature" style={{ maxHeight: '70px', maxWidth: '100%' }} />
+                                ) : (
+                                    <span style={signatureScriptStyle}>{signatureText || 'Signature pending'}</span>
+                                )}
+                            </div>
+                            <p style={{ margin: '10px 0 0 0', fontSize: '12px', fontWeight: 'bold', textAlign: 'center' }}>Signature</p>
+                        </div>
+                        <div>
+                            <div style={signatureNameFieldStyle}>{signatureDate || 'Not provided'}</div>
+                            <p style={{ margin: '10px 0 0 0', fontSize: '12px', fontWeight: 'bold', textAlign: 'center' }}>Date</p>
+                        </div>
                     </div>
                 </div>
 
                 <div style={{ marginTop: '30px', textAlign: 'center', fontSize: '11px', color: '#666' }}>
-                    <strong>Position/Role:</strong> ________________________________
+                    <strong>Position/Role:</strong> {signatureRole}
                 </div>
             </Section>
 

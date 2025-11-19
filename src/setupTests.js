@@ -3,3 +3,54 @@
 // expect(element).toHaveTextContent(/react/i)
 // learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
+
+jest.mock('react-router-dom', () => {
+	const React = require('react');
+	const Fragment = React.Fragment;
+
+	const passThrough = ({ children }) => React.createElement(Fragment, null, children);
+
+	return {
+		__esModule: true,
+		BrowserRouter: passThrough,
+		Routes: passThrough,
+		Route: ({ element = null, children = null }) => element || React.createElement(Fragment, null, children),
+		useNavigate: () => () => {},
+		useLocation: () => ({ pathname: '/' }),
+		useParams: () => ({}),
+	};
+}, { virtual: true });
+
+jest.mock('axios', () => {
+	const handlers = {
+		get: jest.fn(() => Promise.resolve({ data: {} })),
+		post: jest.fn(() => Promise.resolve({ data: {} })),
+		put: jest.fn(() => Promise.resolve({ data: {} })),
+		delete: jest.fn(() => Promise.resolve({ data: {} })),
+	};
+
+	return {
+		__esModule: true,
+		default: handlers,
+		...handlers,
+		create: () => handlers,
+	};
+}, { virtual: true });
+
+jest.mock('./firebase', () => ({
+	db: {},
+}), { virtual: true });
+
+jest.mock('firebase/firestore', () => {
+	return {
+		__esModule: true,
+		collection: jest.fn(() => ({})),
+		doc: jest.fn(() => ({})),
+		getDocs: jest.fn(async () => ({
+			docs: [],
+			forEach: () => {},
+		})),
+		setDoc: jest.fn(async () => {}),
+		deleteDoc: jest.fn(async () => {}),
+	};
+}, { virtual: true });
