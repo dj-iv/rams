@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import SelectableList from '../ui/SelectableList';
 import { TextArea } from '../ui/FormControls';
 
-const BooleanWithTextCategory = ({ category, onChange }) => (
+const BooleanWithTextCategory = ({ category, onChange, headerActions, footerContent }) => (
     <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 md:col-span-2">
-        <h3 className="text-xl font-bold mb-4 text-slate-800">{category.title}</h3>
+        <div className="flex flex-wrap justify-between items-start gap-2 mb-4">
+            <h3 className="text-xl font-bold text-slate-800">{category.title}</h3>
+            {headerActions}
+        </div>
         <div className="flex items-center gap-6 mb-4">
             <p>{category.question}</p>
             <label className="flex items-center gap-2">
@@ -21,12 +24,16 @@ const BooleanWithTextCategory = ({ category, onChange }) => (
             onChange={(e) => onChange(category.id, 'details', e.target.value)} 
             rows={3} 
         />
+        {footerContent}
     </div>
 );
 
-const TextAreaCategory = ({ category, onChange }) => (
+const TextAreaCategory = ({ category, onChange, headerActions, footerContent }) => (
     <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 md:col-span-2">
-        <h3 className="text-xl font-bold mb-4 text-slate-800">{category.title}</h3>
+        <div className="flex flex-wrap justify-between items-start gap-2 mb-4">
+            <h3 className="text-xl font-bold text-slate-800">{category.title}</h3>
+            {headerActions}
+        </div>
         <TextArea 
             label="Details" 
             name={`${category.id}-details`} 
@@ -34,6 +41,7 @@ const TextAreaCategory = ({ category, onChange }) => (
             onChange={(e) => onChange(category.id, 'details', e.target.value)} 
             rows={4} 
         />
+        {footerContent}
     </div>
 );
 
@@ -74,6 +82,83 @@ const AddNewCategoryForm = ({ onSave, onCancel }) => {
 
 const Step5 = ({ data, handlers }) => {
     const [showNewCategoryForm, setShowNewCategoryForm] = useState(false);
+    const [categoryEditState, setCategoryEditState] = useState(null);
+
+    const startCategoryEdit = (category) => {
+        setCategoryEditState({
+            id: category.id,
+            title: category.title,
+            question: category.question || '',
+            type: category.type
+        });
+    };
+
+    const cancelCategoryEdit = () => setCategoryEditState(null);
+
+    const saveCategoryEdit = () => {
+        if (!categoryEditState || !categoryEditState.title.trim()) {
+            alert('Category title cannot be empty.');
+            return;
+        }
+        const updates = { title: categoryEditState.title.trim() };
+        if (categoryEditState.type === 'booleanWithText') {
+            updates.question = categoryEditState.question;
+        }
+        handlers.handleEditSafetyCategory(categoryEditState.id, updates);
+        setCategoryEditState(null);
+    };
+
+    const renderCategoryEditForm = (category) => {
+        if (!categoryEditState || categoryEditState.id !== category.id) {
+            return null;
+        }
+        return (
+            <div className="mt-3 p-3 bg-white border border-dashed border-slate-300 rounded-md space-y-2">
+                <input
+                    type="text"
+                    value={categoryEditState.title}
+                    onChange={(e) => setCategoryEditState((prev) => ({ ...prev, title: e.target.value }))}
+                    className="w-full p-2 border border-slate-300 rounded-md text-sm"
+                    placeholder="Category title"
+                />
+                {category.type === 'booleanWithText' && (
+                    <input
+                        type="text"
+                        value={categoryEditState.question}
+                        onChange={(e) => setCategoryEditState((prev) => ({ ...prev, question: e.target.value }))}
+                        className="w-full p-2 border border-slate-300 rounded-md text-sm"
+                        placeholder="Category question"
+                    />
+                )}
+                <div className="flex gap-2">
+                    <button onClick={saveCategoryEdit} className="bg-[var(--uctel-teal)] text-white font-semibold py-1 px-3 rounded-md text-sm">Save Changes</button>
+                    <button onClick={cancelCategoryEdit} className="bg-slate-200 text-slate-700 py-1 px-3 rounded-md text-sm">Cancel</button>
+                </div>
+            </div>
+        );
+    };
+
+    const renderHeaderActions = (category) => (
+        <div className="flex gap-2 flex-wrap">
+            <button
+                onClick={() => startCategoryEdit(category)}
+                className="px-3 py-1 text-xs font-semibold border border-slate-300 rounded-md text-slate-600 hover:border-[var(--uctel-blue)] hover:text-[var(--uctel-blue)]"
+            >
+                Edit
+            </button>
+            <button
+                onClick={() => {
+                    if (window.confirm('Remove this category? This cannot be undone.')) {
+                        handlers.handleDeleteSafetyCategory(category.id);
+                        cancelCategoryEdit();
+                    }
+                }}
+                className="px-3 py-1 text-xs font-semibold border border-red-200 text-red-600 rounded-md hover:bg-red-50"
+            >
+                Delete
+            </button>
+        </div>
+    );
 
     return (
         <div>
@@ -83,11 +168,15 @@ const Step5 = ({ data, handlers }) => {
                     switch (category.type) {
                         case 'selectableList':
                             return (
-                                <div key={category.id}>
+                                <div key={category.id} className="space-y-2">
                                     <SelectableList 
                                         category={category} 
                                         onToggle={handlers.handleSafetyListItemToggle} 
                                         onAddCustom={handlers.handleAddCustomSafetyItem} 
+                                        onEditItem={handlers.handleEditSafetyListItem}
+                                        onRemoveItem={handlers.handleRemoveSafetyListItem}
+                                        headerActions={renderHeaderActions(category)}
+                                        footerContent={renderCategoryEditForm(category)}
                                     />
                                     {category.id === 'permits' && (
                                         <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -106,9 +195,25 @@ const Step5 = ({ data, handlers }) => {
                                 </div>
                             );
                         case 'booleanWithText':
-                            return <BooleanWithTextCategory key={category.id} category={category} onChange={handlers.handleSafetyLogisticsChange} />;
+                            return (
+                                <BooleanWithTextCategory
+                                    key={category.id}
+                                    category={category}
+                                    onChange={handlers.handleSafetyLogisticsChange}
+                                    headerActions={renderHeaderActions(category)}
+                                    footerContent={renderCategoryEditForm(category)}
+                                />
+                            );
                         case 'textArea':
-                             return <TextAreaCategory key={category.id} category={category} onChange={handlers.handleSafetyLogisticsChange} />;
+                            return (
+                                <TextAreaCategory
+                                    key={category.id}
+                                    category={category}
+                                    onChange={handlers.handleSafetyLogisticsChange}
+                                    headerActions={renderHeaderActions(category)}
+                                    footerContent={renderCategoryEditForm(category)}
+                                />
+                            );
                         default:
                             return null;
                     }

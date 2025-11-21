@@ -800,8 +800,9 @@ useEffect(() => {
   const handleAddCustomSafetyItem = useCallback(async (categoryId, itemName) => {
     const newItem = {
         id: `custom-${Date.now()}`,
-        name: itemName,
-        selected: true,
+      name: itemName,
+      selected: true,
+      isCustom: true,
     };
 
     if (categoryId === 'permits') {
@@ -952,6 +953,76 @@ useEffect(() => {
         )
     }));
   }, []);
+
+    const handleEditSafetyListItem = useCallback(async (categoryId, itemId, newName) => {
+    const trimmedName = newName?.trim();
+    if (!trimmedName) {
+      return;
+    }
+    setFormData(prev => ({
+      ...prev,
+      safetyLogistics: prev.safetyLogistics.map(category => {
+        if (category.id === categoryId && category.type === 'selectableList') {
+          return {
+            ...category,
+            items: category.items.map(item => item.id === itemId ? { ...item, name: trimmedName } : item)
+          };
+        }
+        return category;
+      })
+    }));
+
+    if (categoryId === 'permits') {
+      try {
+        await setDoc(doc(db, 'permits', itemId), { name: trimmedName }, { merge: true });
+      } catch (error) {
+        console.error('Error updating permit item:', error);
+      }
+    }
+    }, []);
+
+    const handleRemoveSafetyListItem = useCallback(async (categoryId, itemId) => {
+    if (categoryId === 'permits') {
+      try {
+        await deleteDoc(doc(db, 'permits', itemId));
+      } catch (error) {
+        console.error('Error deleting permit item:', error);
+      }
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      safetyLogistics: prev.safetyLogistics.map(category => {
+        if (category.id === categoryId && category.type === 'selectableList') {
+          return {
+            ...category,
+            items: category.items.filter(item => item.id !== itemId)
+          };
+        }
+        return category;
+      })
+    }));
+    }, []);
+
+    const handleEditSafetyCategory = useCallback((categoryId, updates) => {
+    setFormData(prev => ({
+      ...prev,
+      safetyLogistics: prev.safetyLogistics.map(category =>
+        category.id === categoryId ? { ...category, ...updates } : category
+      )
+    }));
+    }, []);
+
+    const handleDeleteSafetyCategory = useCallback((categoryId) => {
+    setFormData(prev => {
+      const filtered = prev.safetyLogistics.filter(category => category.id !== categoryId);
+      const nextState = { ...prev, safetyLogistics: filtered };
+      if (categoryId === 'permits') {
+        nextState.permitsDetails = '';
+      }
+      return nextState;
+    });
+    }, []);
 
   // Handle updating the default description for a task type
   const handleUpdateTaskDefault = useCallback((taskId, uniqueId) => {
@@ -1264,6 +1335,98 @@ useEffect(() => {
     }
   };
 
+      const handleUpdateHazard = async (riskKey, hazardId, updatedHazardData) => {
+      const riskCategory = formData.risks[riskKey];
+      if (!riskCategory) {
+        alert('Risk category not found.');
+        return;
+      }
+      const hazardExists = riskCategory.hazards.find(h => h.id === hazardId);
+      if (!hazardExists) {
+        alert('Hazard not found.');
+        return;
+      }
+
+      const updatedRiskCategory = {
+        ...riskCategory,
+        hazards: riskCategory.hazards.map(h =>
+          h.id === hazardId ? { ...h, ...updatedHazardData, id: hazardId, selected: h.selected } : h
+        )
+      };
+
+      try {
+        await setDoc(doc(db, "riskAssessments", riskKey), updatedRiskCategory, { merge: true });
+        setAllRisks(prev => ({ ...prev, [riskKey]: updatedRiskCategory }));
+        setFormData(prev => ({ ...prev, risks: { ...prev.risks, [riskKey]: updatedRiskCategory } }));
+      } catch (error) {
+        console.error('Error updating hazard:', error);
+        alert('Failed to update hazard. Please retry.');
+      }
+      };
+
+      const handleDeleteHazard = async (riskKey, hazardId) => {
+      const riskCategory = formData.risks[riskKey];
+      if (!riskCategory) {
+        alert('Risk category not found.');
+        return;
+      }
+
+      const updatedRiskCategory = {
+        ...riskCategory,
+        hazards: riskCategory.hazards.filter(h => h.id !== hazardId)
+      };
+
+      try {
+        await setDoc(doc(db, "riskAssessments", riskKey), updatedRiskCategory, { merge: true });
+        setAllRisks(prev => ({ ...prev, [riskKey]: updatedRiskCategory }));
+        setFormData(prev => ({ ...prev, risks: { ...prev.risks, [riskKey]: updatedRiskCategory } }));
+      } catch (error) {
+        console.error('Error deleting hazard:', error);
+        alert('Failed to delete hazard.');
+      }
+      };
+
+      const handleEditRiskCategoryTitle = async (riskKey, newTitle) => {
+      if (!newTitle) {
+        return;
+      }
+      const existingCategory = formData.risks[riskKey];
+      if (!existingCategory) {
+        alert('Risk category not found.');
+        return;
+      }
+      const updatedCategory = { ...existingCategory, title: newTitle };
+      try {
+        await setDoc(doc(db, "riskAssessments", riskKey), { title: newTitle }, { merge: true });
+        setAllRisks(prev => ({ ...prev, [riskKey]: updatedCategory }));
+        setFormData(prev => ({ ...prev, risks: { ...prev.risks, [riskKey]: updatedCategory } }));
+      } catch (error) {
+        console.error('Error renaming category:', error);
+        alert('Failed to rename category.');
+      }
+      };
+
+      const handleDeleteRiskCategory = async (riskKey) => {
+      try {
+        await deleteDoc(doc(db, "riskAssessments", riskKey));
+      } catch (error) {
+        console.error('Error deleting risk category:', error);
+      }
+      setAllRisks(prev => {
+        const copy = { ...prev };
+        delete copy[riskKey];
+        return copy;
+      });
+      setFormData(prev => {
+        const nextRisks = { ...prev.risks };
+        delete nextRisks[riskKey];
+        return { ...prev, risks: nextRisks };
+      });
+      if (addingHazardTo === riskKey) {
+        setAddingHazardTo(null);
+      }
+      };
+
   const handleRiskToggle = (riskKey, hazardId) => {
     setFormData(prev => {
       const newRisks = JSON.parse(JSON.stringify(prev.risks));
@@ -1292,16 +1455,23 @@ useEffect(() => {
     }
   }, [formData]);
 
-  const handleCustomItemChange = useCallback(async (listName, index, value) => {
-    const itemToUpdate = formData[listName][index];
-    const updatedItem = { ...itemToUpdate, name: value };
+  const handleCustomItemChange = useCallback(async (listName, itemId, value) => {
+    const trimmedValue = value?.trim();
+    if (!trimmedValue) {
+      return;
+    }
+    const sourceList = formData[listName] || [];
+    const itemToUpdate = sourceList.find(item => item.id === itemId);
+    if (!itemToUpdate) {
+      return;
+    }
+    const updatedItem = { ...itemToUpdate, name: trimmedValue };
     try {
       await setDoc(doc(db, listName, itemToUpdate.id), updatedItem, { merge: true });
-      setFormData(prev => {
-          const newList = [...prev[listName]];
-          newList[index] = updatedItem;
-          return { ...prev, [listName]: newList };
-      });
+      setFormData(prev => ({
+        ...prev,
+        [listName]: prev[listName].map(item => item.id === itemId ? updatedItem : item)
+      }));
     } catch (error) {
       console.error(`Error updating custom item in ${listName}:`, error);
     }
@@ -1381,7 +1551,11 @@ useEffect(() => {
               setAddingHazardTo,
               handleAddNewHazard,
               setShowNewRiskCategoryForm,
-              handleAddNewRiskCategory
+            handleAddNewRiskCategory,
+            handleUpdateHazard,
+            handleDeleteHazard,
+            handleEditRiskCategoryTitle,
+            handleDeleteRiskCategory
           }} 
           addingHazardTo={addingHazardTo}
           showNewRiskCategoryForm={showNewRiskCategoryForm}
@@ -1393,10 +1567,14 @@ useEffect(() => {
             handleSafetyListItemToggle,
             handleAddCustomSafetyItem,
             handleAddNewSafetyCategory,
-            handleInputChange
+            handleInputChange,
+            handleEditSafetyListItem,
+            handleRemoveSafetyListItem,
+            handleEditSafetyCategory,
+            handleDeleteSafetyCategory
           }} 
         />;
-      case 6: return <Step6 data={formData} handlers={{ handleSelectableListToggle, handleAddCustomSafetyItem: addCustomItem, handleCustomItemChange, removeCustomItem, handleInputChange }} />;
+      case 6: return <Step6 data={formData} handlers={{ handleSelectableListToggle, handleAddCustomSafetyItem: addCustomItem, handleCustomItemChange, handleRemoveCustomItem: removeCustomItem, handleInputChange }} />;
      
       case 7: return <Step7 previewHandler={handlePreview} />;
       default: return (

@@ -21,8 +21,8 @@ const Step6 = ({ data, handlers }) => {
                         category={{ id: 'ppe', title: 'Personal Protective Equipment (PPE)', items: ppe }} 
                         onToggle={handleSelectableListToggle} 
                         onAddCustom={handleAddCustomSafetyItem} 
-                        onCustomChange={handleCustomItemChange}
-                        onRemoveCustom={handleRemoveCustomItem}
+                        onEditItem={handleCustomItemChange}
+                        onRemoveItem={handleRemoveCustomItem}
                     />
                     <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
                         <label className="block text-sm font-medium text-green-800 mb-2">
@@ -43,8 +43,8 @@ const Step6 = ({ data, handlers }) => {
                         category={{ id: 'tools', title: 'Plant / Equipment / Tools', items: tools }} 
                         onToggle={handleSelectableListToggle} 
                         onAddCustom={handleAddCustomSafetyItem} 
-                        onCustomChange={handleCustomItemChange}
-                        onRemoveCustom={handleRemoveCustomItem}
+                        onEditItem={handleCustomItemChange}
+                        onRemoveItem={handleRemoveCustomItem}
                     />
                     <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
                         <label className="block text-sm font-medium text-orange-800 mb-2">
@@ -65,8 +65,8 @@ const Step6 = ({ data, handlers }) => {
                         category={{ id: 'materials', title: 'Materials', items: materials }} 
                         onToggle={handleSelectableListToggle} 
                         onAddCustom={handleAddCustomSafetyItem} 
-                        onCustomChange={handleCustomItemChange}
-                        onRemoveCustom={handleRemoveCustomItem}
+                        onEditItem={handleCustomItemChange}
+                        onRemoveItem={handleRemoveCustomItem}
                     />
                     <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
                         <label className="block text-sm font-medium text-purple-800 mb-2">

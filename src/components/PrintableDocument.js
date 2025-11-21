@@ -174,6 +174,8 @@ const PrintableDocument = ({ data, allTasks }) => {
         color: '#1f2937'
     };
 
+    const manualHandlingStatement = 'All risks have been assessed in accordance with the Manual Handling Operations Regulations 1992 (as amended) and align with UCtel\'s HSQE policy and site-specific safe systems of work.';
+
     return (
         <div className="printable-document" style={{ fontFamily: 'Arial, sans-serif', color: '#333', padding: '15px', backgroundColor: 'white', maxWidth: 'none', width: '700px', margin: '0 auto' }}>
             <header style={{ 
@@ -521,12 +523,26 @@ const PrintableDocument = ({ data, allTasks }) => {
 
             <Section title="4.0 Risk Assessments">
                 {selectedRiskEntries
-                    .map(([key, riskCategory], categoryIndex) => (
+                    .map(([key, riskCategory], categoryIndex) => {
+                    const isManualHandling = (riskCategory.title || '').toLowerCase() === 'manual handling';
+                    return (
                     <div key={key}>
                         {/* Page break before each risk category (except the first) */}
                         {categoryIndex > 0 && <div className="page-break"></div>}
                         
                         <div style={{ pageBreakInside: 'avoid', marginBottom: '40px' }}>
+                            {isManualHandling && (
+                                <p style={{
+                                    margin: '0 0 12px 0',
+                                    fontSize: '12px',
+                                    backgroundColor: '#fff9e6',
+                                    borderLeft: '4px solid #f4b400',
+                                    padding: '10px',
+                                    lineHeight: '1.4'
+                                }}>
+                                    {manualHandlingStatement}
+                                </p>
+                            )}
                             <h4 style={{ margin: '0 0 15px 0', color: '#2c4f6b', fontSize: '14px', fontWeight: 'bold' }}>
                                 4.{categoryIndex + 1} {riskCategory.title}
                             </h4>
@@ -633,7 +649,8 @@ const PrintableDocument = ({ data, allTasks }) => {
                         </table>
                         </div>
                     </div>
-                ))}
+                );
+                })}
                 {/* Force image size with a container */}
                 <div style={{ width: '12cm', marginTop: '20px', marginLeft: 'auto', marginRight: 'auto' }}>
                     <img src={riskEvaluationMatrix} alt="Risk Evaluation Matrix" style={{ width: '100%', height: 'auto', display: 'block' }} />
