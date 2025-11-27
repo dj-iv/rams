@@ -176,6 +176,17 @@ const PrintableDocument = ({ data, allTasks }) => {
 
     const manualHandlingStatement = 'All risks have been assessed in accordance with the Manual Handling Operations Regulations 1992 (as amended) and align with UCtel\'s HSQE policy and site-specific safe systems of work.';
 
+    const safetyItems = Array.isArray(safetyLogistics) ? safetyLogistics : [];
+    const sectionThreePage = 2;
+    const sectionFivePage = 4 + Math.floor(selectedRiskEntries.length / 2);
+    const sectionSixPage = 5 + Math.floor(Object.keys(risks || {}).length / 2);
+    const sectionEightPage = 7 + Math.floor(Object.keys(risks || {}).length / 2);
+    const equipmentSubsections = [
+        { label: '6.1 Personal Protective Equipment (PPE)' },
+        { label: '6.2 Tools & Equipment' },
+        { label: '6.3 Materials' }
+    ];
+
     return (
         <div className="printable-document" style={{ fontFamily: 'Arial, sans-serif', color: '#333', padding: '15px', backgroundColor: 'white', maxWidth: 'none', width: '700px', margin: '0 auto' }}>
             <header style={{ 
@@ -226,8 +237,14 @@ const PrintableDocument = ({ data, allTasks }) => {
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', padding: '4px 0', borderBottom: '1px dotted #ccc' }}>
                             <span style={{ fontWeight: 'bold' }}>3.0 Method Statement (Sequence of Works)</span>
-                            <span style={{ fontWeight: 'bold' }}>Page 2</span>
+                            <span style={{ fontWeight: 'bold' }}>Page {sectionThreePage}</span>
                         </div>
+                        {enabledTasks.map((task, index) => (
+                            <div key={task.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', padding: '3px 0 3px 20px', borderBottom: '1px dotted #eee' }}>
+                                <span>3.{index + 1} {allTasks?.[task.taskId]?.title || task.taskTitle || 'Task'}</span>
+                                <span>Page {sectionThreePage}</span>
+                            </div>
+                        ))}
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', padding: '4px 0', borderBottom: '1px dotted #ccc' }}>
                             <span style={{ fontWeight: 'bold' }}>4.0 Risk Assessments</span>
                             <span style={{ fontWeight: 'bold' }}>Page 3</span>
@@ -240,15 +257,31 @@ const PrintableDocument = ({ data, allTasks }) => {
                         ))}
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', padding: '4px 0', borderBottom: '1px dotted #ccc' }}>
                             <span style={{ fontWeight: 'bold' }}>5.0 Safety & Logistics</span>
-                            <span style={{ fontWeight: 'bold' }}>Page {4 + Math.floor(selectedRiskEntries.length / 2)}</span>
+                            <span style={{ fontWeight: 'bold' }}>Page {sectionFivePage}</span>
                         </div>
+                        {safetyItems.map((item, index) => (
+                            <div key={item.id || `${item.title}-${index}`} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', padding: '3px 0 3px 20px', borderBottom: '1px dotted #eee' }}>
+                                <span>5.{index + 1} {item.title}</span>
+                                <span>Page {sectionFivePage}</span>
+                            </div>
+                        ))}
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', padding: '4px 0', borderBottom: '1px dotted #ccc' }}>
                             <span style={{ fontWeight: 'bold' }}>6.0 Equipment</span>
-                            <span style={{ fontWeight: 'bold' }}>Page {5 + Math.floor(Object.keys(risks).length/2)}</span>
+                            <span style={{ fontWeight: 'bold' }}>Page {sectionSixPage}</span>
                         </div>
+                        {equipmentSubsections.map((entry, index) => (
+                            <div key={entry.label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', padding: '3px 0 3px 20px', borderBottom: '1px dotted #eee' }}>
+                                <span>{entry.label}</span>
+                                <span>Page {sectionSixPage}</span>
+                            </div>
+                        ))}
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', padding: '4px 0', borderBottom: '1px dotted #ccc' }}>
                             <span style={{ fontWeight: 'bold' }}>7.0 Risk Summary & Approval</span>
                             <span style={{ fontWeight: 'bold' }}>Page {6 + Math.floor(Object.keys(risks).length/2)}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', padding: '4px 0', borderBottom: '1px dotted #ccc' }}>
+                            <span style={{ fontWeight: 'bold' }}>8.0 Approval & Sign-Off</span>
+                            <span style={{ fontWeight: 'bold' }}>Page {sectionEightPage}</span>
                         </div>
                     </div>
                 </div>
